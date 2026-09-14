@@ -1,0 +1,11 @@
+## Copia este archivo como local.properties (NO se sube a Git).
+##
+## 1) Ruta del SDK de Android (Android Studio la genera sola al abrir el proyecto):
+# sdk.dir=/Users/TU_USUARIO/Library/Android/sdk
+# sdk.dir=C:\\Users\\TU_USUARIO\\AppData\\Local\\Android\\Sdk
+# sdk.dir=/home/TU_USUARIO/Android/Sdk
+
+## 2) Client ID de tipo WEB de Google Cloud Console (OAuth 2.0).
+##    Se usa como serverClientId en Credential Manager / Google Sign-In.
+##    NO uses el Client ID de tipo Android aquí — usa el de tipo "Aplicación web".
+WEB_CLIENT_ID=1234567890-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
