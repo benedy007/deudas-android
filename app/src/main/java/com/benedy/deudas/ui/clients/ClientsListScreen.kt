@@ -23,7 +23,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -50,16 +49,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benedy.deudas.R
+import com.benedy.deudas.ui.components.ClientAvatar
 import com.benedy.deudas.ui.theme.ClientOverdueBg
 import com.benedy.deudas.ui.theme.ClientRecentBg
 import com.benedy.deudas.ui.theme.ClientStatusOnBg
 import com.benedy.deudas.ui.theme.ClientStatusOnBgVariant
+import com.benedy.deudas.ui.util.WhatsAppHelper
 import com.benedy.deudas.ui.util.formatMoney
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -71,6 +74,8 @@ fun ClientsListScreen(
     viewModel: ClientsListViewModel,
     title: String = stringResource(R.string.clients_title),
     subtitle: String? = null,
+    emptyMessage: String? = null,
+    showAddFab: Boolean = true,
     onBack: () -> Unit,
     onAddClient: () -> Unit,
     onClientClick: (Long) -> Unit
@@ -125,11 +130,13 @@ fun ClientsListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddClient,
-                elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(defaultElevation = 10.dp)
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_client_title))
+            if (showAddFab) {
+                FloatingActionButton(
+                    onClick = onAddClient,
+                    elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(defaultElevation = 10.dp)
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_client_title))
+                }
             }
         }
     ) { padding ->
@@ -197,10 +204,10 @@ fun ClientsListScreen(
                         Spacer(Modifier.height(12.dp))
                     }
                     Text(
-                        text = if (query.isNotBlank()) {
-                            stringResource(R.string.clients_search_empty)
-                        } else {
-                            stringResource(R.string.clients_empty)
+                        text = when {
+                            query.isNotBlank() -> stringResource(R.string.clients_search_empty)
+                            emptyMessage != null -> emptyMessage
+                            else -> stringResource(R.string.clients_empty)
                         },
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center,
@@ -234,6 +241,7 @@ fun ClientsListScreen(
 @Composable
 private fun ClientRow(item: ClientListItem, onClick: () -> Unit) {
     val client = item.client
+    val context = LocalContext.current
     val extras = listOfNotNull(
         client.direccionCasa?.takeIf { it.isNotBlank() },
         client.lugarTrabajo?.takeIf { it.isNotBlank() },
@@ -242,31 +250,18 @@ private fun ClientRow(item: ClientListItem, onClick: () -> Unit) {
     val dateFmt = remember {
         SimpleDateFormat("dd/MM/yyyy", Locale("es", "DO"))
     }
-    val lines = buildList {
-        client.phone.takeIf { it.isNotBlank() }?.let { add(it) }
-        if (extras.isNotEmpty()) add(extras.joinToString(" · "))
-        if (item.totalRemaining > 0) {
-            add(stringResource(R.string.remaining_label, formatMoney(item.totalRemaining)))
-        }
-        item.earliestFechaEntrega?.let { ms ->
-            add(stringResource(R.string.fecha_entrega_label, dateFmt.format(Date(ms))))
-        }
-    }
-    val supporting = lines.joinToString("\n")
 
-    // Overdue red wins for background; recent payment shows green badge if both
     val usesStatusBg = item.isOverdue || item.hasRecentPayment
     val containerColor = when {
         item.isOverdue -> ClientOverdueBg
         item.hasRecentPayment -> ClientRecentBg
         else -> MaterialTheme.colorScheme.surface
     }
-    // Pastel status backgrounds stay light in both themes — force dark text/icons
-    // so dark-theme onSurface (near-white) never lands on green/red cards.
     val contentColor = if (usesStatusBg) ClientStatusOnBg else MaterialTheme.colorScheme.onSurface
     val supportingColor =
         if (usesStatusBg) ClientStatusOnBgVariant else MaterialTheme.colorScheme.onSurfaceVariant
     val iconColor = if (usesStatusBg) ClientStatusOnBg else MaterialTheme.colorScheme.onSurfaceVariant
+    val phoneLinkColor = if (usesStatusBg) Color(0xFF0D47A1) else MaterialTheme.colorScheme.primary
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -292,13 +287,41 @@ private fun ClientRow(item: ClientListItem, onClick: () -> Unit) {
                 }
             },
             supportingContent = {
-                Text(supporting, color = supportingColor)
+                Column {
+                    if (client.phone.isNotBlank()) {
+                        Text(
+                            text = client.phone,
+                            color = phoneLinkColor,
+                            textDecoration = TextDecoration.Underline,
+                            modifier = Modifier.clickable {
+                                WhatsAppHelper.openChat(context, client.phone)
+                            }
+                        )
+                    }
+                    if (extras.isNotEmpty()) {
+                        Text(extras.joinToString(" · "), color = supportingColor)
+                    }
+                    if (item.totalRemaining > 0) {
+                        Text(
+                            stringResource(R.string.remaining_label, formatMoney(item.totalRemaining)),
+                            color = supportingColor
+                        )
+                    }
+                    item.earliestFechaEntrega?.let { ms ->
+                        Text(
+                            stringResource(R.string.fecha_entrega_label, dateFmt.format(Date(ms))),
+                            color = supportingColor
+                        )
+                    }
+                }
             },
             leadingContent = {
-                Icon(
-                    Icons.Outlined.Person,
-                    contentDescription = null,
-                    tint = iconColor
+                ClientAvatar(
+                    photoPath = client.photoPath,
+                    size = 44.dp,
+                    iconTint = iconColor,
+                    placeholderBg = if (usesStatusBg) Color.White.copy(alpha = 0.35f)
+                    else MaterialTheme.colorScheme.surfaceVariant
                 )
             },
             trailingContent = {

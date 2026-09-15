@@ -11,22 +11,33 @@ import com.benedy.deudas.ui.payment.RegisterPaymentViewModel
 import com.benedy.deudas.ui.products.AddProductViewModel
 import com.benedy.deudas.ui.products.ProductsListViewModel
 import com.benedy.deudas.ui.history.PaymentHistoryViewModel
+import com.benedy.deudas.ui.home.HomeViewModel
 import com.benedy.deudas.ui.receipt.ReceiptViewModel
 
-class ClientsListViewModelFactory(
+class HomeViewModelFactory(
     private val repo: DebtCrmRepository
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        ClientsListViewModel(repo) as T
+        HomeViewModel(repo) as T
+}
+
+class ClientsListViewModelFactory(
+    private val repo: DebtCrmRepository,
+    private val onlyWithBalance: Boolean = false
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T =
+        ClientsListViewModel(repo, onlyWithBalance) as T
 }
 
 class AddClientViewModelFactory(
-    private val repo: DebtCrmRepository
+    private val repo: DebtCrmRepository,
+    private val editClientId: Long? = null
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        AddClientViewModel(repo) as T
+        AddClientViewModel(repo, editClientId) as T
 }
 
 class ClientDetailViewModelFactory(

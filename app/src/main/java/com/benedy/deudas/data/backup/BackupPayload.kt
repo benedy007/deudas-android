@@ -1,6 +1,7 @@
 package com.benedy.deudas.data.backup
 
 import com.benedy.deudas.data.local.entity.ClientEntity
+import com.benedy.deudas.data.local.entity.CobranzaNoteEntity
 import com.benedy.deudas.data.local.entity.DebtEntity
 import com.benedy.deudas.data.local.entity.PaymentEntity
 import com.benedy.deudas.data.local.entity.ProductEntity
@@ -9,7 +10,8 @@ import org.json.JSONObject
 
 /**
  * Snapshot of all Room CRM tables for Drive backup/restore.
- * Format version 1 — includes addresses, fechaEntrega, and optional installment plan.
+ * Format version 2 — photoPath, creditLimit, cobranza notes.
+ * Photo binaries are device-local (path only in JSON; OK if restore breaks path).
  */
 data class BackupPayload(
     val formatVersion: Int = FORMAT_VERSION,
@@ -17,7 +19,8 @@ data class BackupPayload(
     val clients: List<ClientEntity>,
     val debts: List<DebtEntity>,
     val payments: List<PaymentEntity>,
-    val products: List<ProductEntity>
+    val products: List<ProductEntity>,
+    val cobranzaNotes: List<CobranzaNoteEntity> = emptyList()
 ) {
     fun toJson(): String {
         val root = JSONObject()
@@ -34,6 +37,8 @@ data class BackupPayload(
                         .put("direccionCasa", c.direccionCasa)
                         .put("lugarTrabajo", c.lugarTrabajo)
                         .put("direccionTrabajo", c.direccionTrabajo)
+                        .put("photoPath", c.photoPath)
+                        .put("creditLimit", c.creditLimit ?: JSONObject.NULL)
                         .put("createdAt", c.createdAt)
                 )
             }
@@ -80,11 +85,23 @@ data class BackupPayload(
                 )
             }
         })
+        root.put("cobranzaNotes", JSONArray().apply {
+            cobranzaNotes.forEach { n ->
+                put(
+                    JSONObject()
+                        .put("id", n.id)
+                        .put("clientId", n.clientId)
+                        .put("text", n.text)
+                        .put("promisedDate", n.promisedDate ?: JSONObject.NULL)
+                        .put("createdAt", n.createdAt)
+                )
+            }
+        })
         return root.toString()
     }
 
     companion object {
-        const val FORMAT_VERSION = 1
+        const val FORMAT_VERSION = 2
         const val BACKUP_FILE_NAME = "deudas-backup.json"
 
         fun fromJson(json: String): BackupPayload {
@@ -93,6 +110,7 @@ data class BackupPayload(
             val debtsArr = root.optJSONArray("debts") ?: JSONArray()
             val paymentsArr = root.optJSONArray("payments") ?: JSONArray()
             val productsArr = root.optJSONArray("products") ?: JSONArray()
+            val notesArr = root.optJSONArray("cobranzaNotes") ?: JSONArray()
 
             val clients = buildList {
                 for (i in 0 until clientsArr.length()) {
@@ -106,6 +124,8 @@ data class BackupPayload(
                             direccionCasa = o.nullableString("direccionCasa"),
                             lugarTrabajo = o.nullableString("lugarTrabajo"),
                             direccionTrabajo = o.nullableString("direccionTrabajo"),
+                            photoPath = o.nullableString("photoPath"),
+                            creditLimit = o.nullableDouble("creditLimit"),
                             createdAt = o.optLong("createdAt", System.currentTimeMillis())
                         )
                     )
@@ -159,6 +179,20 @@ data class BackupPayload(
                     )
                 }
             }
+            val notes = buildList {
+                for (i in 0 until notesArr.length()) {
+                    val o = notesArr.getJSONObject(i)
+                    add(
+                        CobranzaNoteEntity(
+                            id = o.getLong("id"),
+                            clientId = o.getLong("clientId"),
+                            text = o.getString("text"),
+                            promisedDate = o.nullableLong("promisedDate"),
+                            createdAt = o.optLong("createdAt", System.currentTimeMillis())
+                        )
+                    )
+                }
+            }
 
             return BackupPayload(
                 formatVersion = root.optInt("formatVersion", FORMAT_VERSION),
@@ -166,7 +200,8 @@ data class BackupPayload(
                 clients = clients,
                 debts = debts,
                 payments = payments,
-                products = products
+                products = products,
+                cobranzaNotes = notes
             )
         }
 

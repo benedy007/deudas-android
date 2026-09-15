@@ -32,7 +32,12 @@ data class ClientListItem(
 )
 
 class ClientsListViewModel(
-    repo: DebtCrmRepository
+    repo: DebtCrmRepository,
+    /**
+     * When true (Cobrar picker), only clients with total remainingBalance > 0.
+     * When false (Ver clientes), show all clients.
+     */
+    private val onlyWithBalance: Boolean = false
 ) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
@@ -60,7 +65,14 @@ class ClientsListViewModel(
         sortMode
     ) { data, query, sort ->
         try {
-            buildClientListItems(data.first, data.second, data.third, query, sort)
+            buildClientListItems(
+                clients = data.first,
+                debts = data.second,
+                payments = data.third,
+                query = query,
+                sort = sort,
+                onlyWithBalance = onlyWithBalance
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Failed to build client list items", e)
             emptyList()
@@ -89,7 +101,8 @@ class ClientsListViewModel(
             payments: List<PaymentEntity>,
             query: String,
             sort: ClientSortMode,
-            now: Long = System.currentTimeMillis()
+            now: Long = System.currentTimeMillis(),
+            onlyWithBalance: Boolean = false
         ): List<ClientListItem> {
             val overdueCutoff = now - ONE_MONTH_MS
             val recentCutoff = now - FOURTEEN_DAYS_MS
@@ -125,6 +138,8 @@ class ClientsListViewModel(
                     isOverdue = isOverdue,
                     hasRecentPayment = hasRecentPayment
                 )
+            }.let { list ->
+                if (onlyWithBalance) list.filter { it.totalRemaining > 0 } else list
             }
 
             return when (sort) {

@@ -41,7 +41,7 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`
 | Auth | Credential Manager (ID token) para sesión |
 | Scopes Drive | `https://www.googleapis.com/auth/drive.appdata` vía `AuthorizationClient` (incremental, al tocar Respaldar/Restaurar) |
 | Almacenamiento | Archivo `deudas-backup.json` en `appDataFolder` (no aparece en «Mi unidad») |
-| Formato | JSON con `clients`, `debts`, `payments`, `products` (incluye campos de dirección) |
+| Formato | JSON con `clients`, `debts`, `payments`, `products` (incluye direcciones, photoPath, creditLimit y notas de cobranza) |
 | Cloud Console | Drive API habilitada + OAuth Android + Web client ID |
 
 Alternativa documentada (no usada ahora): carpeta visible «Deudas» con scope `drive.file`.

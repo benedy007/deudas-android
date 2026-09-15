@@ -25,6 +25,8 @@ data class AddDebtUiState(
     /** Percent text when a frequency is selected. */
     val planPercent: String = "",
     val error: String? = null,
+    /** Soft warning when new debt would exceed client credit limit. */
+    val creditWarn: Boolean = false,
     val saved: Boolean = false,
     val saving: Boolean = false
 ) {
@@ -96,7 +98,7 @@ class AddDebtViewModel(
         }
     }
 
-    fun save() {
+    fun save(forceDespiteCreditWarn: Boolean = false) {
         val s = _ui.value
         val amount = s.amount.replace(',', '.').toDoubleOrNull()
         if (s.description.isBlank() || amount == null || amount <= 0) {
@@ -116,7 +118,14 @@ class AddDebtViewModel(
             planPercent = pct
         }
         viewModelScope.launch {
-            _ui.update { it.copy(saving = true) }
+            if (!forceDespiteCreditWarn) {
+                val exceeds = repo.wouldExceedCreditLimit(clientId, amount)
+                if (exceeds) {
+                    _ui.update { it.copy(creditWarn = true, saving = false) }
+                    return@launch
+                }
+            }
+            _ui.update { it.copy(saving = true, creditWarn = false) }
             repo.addDebt(
                 clientId = clientId,
                 description = s.description,
@@ -128,4 +137,8 @@ class AddDebtViewModel(
             _ui.update { it.copy(saving = false, saved = true) }
         }
     }
+
+    fun dismissCreditWarn() = _ui.update { it.copy(creditWarn = false) }
+
+    fun confirmDespiteCreditWarn() = save(forceDespiteCreditWarn = true)
 }

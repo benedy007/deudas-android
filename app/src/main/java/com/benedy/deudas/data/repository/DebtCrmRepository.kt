@@ -4,10 +4,14 @@ import androidx.room.withTransaction
 import com.benedy.deudas.data.backup.BackupPayload
 import com.benedy.deudas.data.local.DeudasDatabase
 import com.benedy.deudas.data.local.entity.ClientEntity
+import com.benedy.deudas.data.local.entity.CobranzaNoteEntity
 import com.benedy.deudas.data.local.entity.DebtEntity
 import com.benedy.deudas.data.local.entity.PaymentEntity
 import com.benedy.deudas.data.local.entity.ProductEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import java.util.Calendar
 import kotlin.math.min
 
 /**
@@ -20,6 +24,13 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
     private val debtDao = db.debtDao()
     private val paymentDao = db.paymentDao()
     private val productDao = db.productDao()
+    private val cobranzaNoteDao = db.cobranzaNoteDao()
+
+    data class DashboardStats(
+        val totalPorCobrar: Double = 0.0,
+        val cobradoDelMes: Double = 0.0,
+        val clientesEnMora: Int = 0
+    )
 
     // --- Clientes ---
     fun observeClients(): Flow<List<ClientEntity>> = clientDao.observeAll()
@@ -32,23 +43,66 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
         notes: String?,
         direccionCasa: String? = null,
         lugarTrabajo: String? = null,
-        direccionTrabajo: String? = null
+        direccionTrabajo: String? = null,
+        photoPath: String? = null,
+        creditLimit: Double? = null,
+        /** If > 0, creates an opening-balance debt for the new client. */
+        saldoInicial: Double? = null,
+        saldoInicialDescripcion: String = "Saldo inicial"
     ): Long {
         fun clean(v: String?) = v?.trim()?.ifBlank { null }
-        return clientDao.insert(
-            ClientEntity(
-                name = name.trim(),
-                phone = phone.trim(),
-                notes = clean(notes),
-                direccionCasa = clean(direccionCasa),
-                lugarTrabajo = clean(lugarTrabajo),
-                direccionTrabajo = clean(direccionTrabajo)
+        return db.withTransaction {
+            val id = clientDao.insert(
+                ClientEntity(
+                    name = name.trim(),
+                    phone = phone.trim(),
+                    notes = clean(notes),
+                    direccionCasa = clean(direccionCasa),
+                    lugarTrabajo = clean(lugarTrabajo),
+                    direccionTrabajo = clean(direccionTrabajo),
+                    photoPath = clean(photoPath),
+                    creditLimit = creditLimit?.takeIf { it > 0 }
+                )
             )
-        )
+            val opening = saldoInicial ?: 0.0
+            if (opening > 0) {
+                debtDao.insert(
+                    DebtEntity(
+                        clientId = id,
+                        description = saldoInicialDescripcion.trim().ifBlank { "Saldo inicial" },
+                        originalAmount = opening,
+                        remainingBalance = opening
+                    )
+                )
+            }
+            id
+        }
     }
 
     suspend fun updateClient(client: ClientEntity) = clientDao.update(client)
     suspend fun deleteClient(id: Long) = clientDao.deleteById(id)
+
+    // --- Cobranza notes ---
+    fun observeCobranzaNotes(clientId: Long): Flow<List<CobranzaNoteEntity>> =
+        cobranzaNoteDao.observeByClient(clientId)
+
+    suspend fun addCobranzaNote(
+        clientId: Long,
+        text: String,
+        promisedDate: Long? = null
+    ): Long {
+        val clean = text.trim()
+        require(clean.isNotEmpty()) { "Nota vacía" }
+        return cobranzaNoteDao.insert(
+            CobranzaNoteEntity(
+                clientId = clientId,
+                text = clean,
+                promisedDate = promisedDate
+            )
+        )
+    }
+
+    suspend fun deleteCobranzaNote(id: Long) = cobranzaNoteDao.deleteById(id)
 
     // --- Productos ---
     fun observeProducts(): Flow<List<ProductEntity>> = productDao.observeAll()
@@ -73,6 +127,18 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
     fun observeTotalRemaining(clientId: Long): Flow<Double> = debtDao.observeTotalRemaining(clientId)
     suspend fun getDebt(id: Long): DebtEntity? = debtDao.getById(id)
     suspend fun getTotalRemaining(clientId: Long): Double = debtDao.getTotalRemaining(clientId)
+
+    /**
+     * Returns true if adding [amount] would push the client's open balance over creditLimit.
+     * No limit configured → never exceeds.
+     */
+    suspend fun wouldExceedCreditLimit(clientId: Long, additionalAmount: Double): Boolean {
+        val client = clientDao.getById(clientId) ?: return false
+        val limit = client.creditLimit ?: return false
+        if (limit <= 0) return false
+        val current = debtDao.getTotalRemaining(clientId)
+        return (current + additionalAmount) > limit + 1e-9
+    }
 
     suspend fun addDebt(
         clientId: Long,
@@ -106,10 +172,6 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
         paymentDao.observeByClient(clientId)
     suspend fun getPayment(id: Long): PaymentEntity? = paymentDao.getById(id)
 
-    /**
-     * Payments that belong to the same receipt as [paymentId]
-     * (waterfall group, or the single payment itself).
-     */
     suspend fun getPaymentGroup(paymentId: Long): List<PaymentEntity> {
         val payment = paymentDao.getById(paymentId) ?: return emptyList()
         val groupId = payment.groupId
@@ -121,9 +183,6 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
         }
     }
 
-    /**
-     * Legacy single-debt payment (kept for compatibility).
-     */
     suspend fun registerPayment(
         debtId: Long,
         amount: Double,
@@ -144,18 +203,12 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
     }
 
     data class WaterfallResult(
-        /** First payment id — used to open the receipt. */
         val receiptPaymentId: Long,
         val groupId: Long,
         val totalPaid: Double,
         val allocations: List<Pair<DebtEntity, Double>>
     )
 
-    /**
-     * Applies [amount] to the client's TOTAL open debt, oldest first (createdAt ASC).
-     * Creates one PaymentEntity per affected debt, all sharing [groupId].
-     * Caps at total remaining (no overpay rows).
-     */
     suspend fun registerClientPaymentWaterfall(
         clientId: Long,
         amount: Double,
@@ -211,10 +264,6 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
         }
     }
 
-    /**
-     * Undoes a payment (or waterfall group): restores each debt's remainingBalance
-     * (capped at originalAmount), then deletes the payment row(s).
-     */
     suspend fun deletePaymentGroup(paymentId: Long) {
         db.withTransaction {
             val payments = getPaymentGroup(paymentId)
@@ -236,9 +285,6 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
         }
     }
 
-    /**
-     * Cobrar con producto: crea deuda por el precio del producto y opcionalmente registra pago parcial/total.
-     */
     suspend fun chargeProduct(
         clientId: Long,
         product: ProductEntity,
@@ -252,6 +298,90 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
         return debtId to paymentId
     }
 
+    // --- Dashboard ---
+
+    fun observeDashboardStats(): Flow<DashboardStats> {
+        return combine(
+            debtDao.observeAll(),
+            paymentDao.observeAll(),
+            clientDao.observeAll()
+        ) { debts, payments, _ ->
+            val now = System.currentTimeMillis()
+            val monthStart = startOfMonthMs(now)
+            val overdueCutoff = now - 30L * 24 * 60 * 60 * 1000
+            val totalPorCobrar = debts.sumOf { it.remainingBalance.coerceAtLeast(0.0) }
+            val cobradoDelMes = payments
+                .filter { it.createdAt >= monthStart }
+                .sumOf { it.amount }
+            val openByClient = debts
+                .filter { it.remainingBalance > 0 }
+                .groupBy { it.clientId }
+            val clientesEnMora = openByClient.count { (_, clientDebts) ->
+                clientDebts.any { debt ->
+                    debt.createdAt < overdueCutoff ||
+                        (debt.fechaEntrega != null && debt.fechaEntrega < now)
+                }
+            }
+            DashboardStats(
+                totalPorCobrar = totalPorCobrar,
+                cobradoDelMes = cobradoDelMes,
+                clientesEnMora = clientesEnMora
+            )
+        }
+    }
+
+    // --- Statement data ---
+
+    data class StatementLine(
+        val dateMs: Long,
+        val label: String,
+        val amount: Double,
+        val isCredit: Boolean
+    )
+
+    data class ClientStatement(
+        val client: ClientEntity,
+        val lines: List<StatementLine>,
+        val totalDebt: Double,
+        val totalPaid: Double,
+        val remaining: Double
+    )
+
+    suspend fun buildClientStatement(clientId: Long): ClientStatement? {
+        val client = clientDao.getById(clientId) ?: return null
+        val debts = debtDao.getAll().filter { it.clientId == clientId }
+        val payments = paymentDao.getAll().filter { it.clientId == clientId }
+        val lines = mutableListOf<StatementLine>()
+        debts.forEach { d ->
+            lines += StatementLine(
+                dateMs = d.createdAt,
+                label = "Deuda: ${d.description}",
+                amount = d.originalAmount,
+                isCredit = false
+            )
+        }
+        payments.forEach { p ->
+            val debtDesc = debts.find { it.id == p.debtId }?.description ?: "Pago"
+            lines += StatementLine(
+                dateMs = p.createdAt,
+                label = "Pago · $debtDesc",
+                amount = p.amount,
+                isCredit = true
+            )
+        }
+        lines.sortBy { it.dateMs }
+        val totalDebt = debts.sumOf { it.originalAmount }
+        val totalPaid = payments.sumOf { it.amount }
+        val remaining = debts.sumOf { it.remainingBalance.coerceAtLeast(0.0) }
+        return ClientStatement(
+            client = client,
+            lines = lines,
+            totalDebt = totalDebt,
+            totalPaid = totalPaid,
+            remaining = remaining
+        )
+    }
+
     // --- Backup / restore ---
 
     suspend fun exportBackupPayload(): BackupPayload {
@@ -259,16 +389,14 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
             clients = clientDao.getAll(),
             debts = debtDao.getAll(),
             payments = paymentDao.getAll(),
-            products = productDao.getAll()
+            products = productDao.getAll(),
+            cobranzaNotes = cobranzaNoteDao.getAll()
         )
     }
 
-    /**
-     * Replaces all local CRM data with the backup snapshot (same IDs).
-     * Deletes in FK-safe order, then inserts clients → products → debts → payments.
-     */
     suspend fun importBackupPayload(payload: BackupPayload) {
         db.withTransaction {
+            cobranzaNoteDao.deleteAll()
             paymentDao.deleteAll()
             debtDao.deleteAll()
             clientDao.deleteAll()
@@ -278,6 +406,20 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
             if (payload.products.isNotEmpty()) productDao.insertAll(payload.products)
             if (payload.debts.isNotEmpty()) debtDao.insertAll(payload.debts)
             if (payload.payments.isNotEmpty()) paymentDao.insertAll(payload.payments)
+            if (payload.cobranzaNotes.isNotEmpty()) cobranzaNoteDao.insertAll(payload.cobranzaNotes)
+        }
+    }
+
+    companion object {
+        fun startOfMonthMs(now: Long = System.currentTimeMillis()): Long {
+            val cal = Calendar.getInstance()
+            cal.timeInMillis = now
+            cal.set(Calendar.DAY_OF_MONTH, 1)
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            return cal.timeInMillis
         }
     }
 }

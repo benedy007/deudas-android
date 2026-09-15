@@ -85,12 +85,15 @@ import com.benedy.deudas.ui.theme.HubProductsContent
 import com.benedy.deudas.ui.theme.HubProductsIconEnd
 import com.benedy.deudas.ui.theme.HubProductsIconStart
 import androidx.compose.ui.graphics.Color
+import com.benedy.deudas.data.repository.DebtCrmRepository
+import com.benedy.deudas.ui.util.formatMoney
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     uiState: AuthUiState,
     backupViewModel: BackupViewModel,
+    dashboard: DebtCrmRepository.DashboardStats = DebtCrmRepository.DashboardStats(),
     onLogout: () -> Unit,
     onAddClient: () -> Unit,
     onCharge: () -> Unit,
@@ -235,6 +238,36 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(2.dp))
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = stringResource(R.string.dashboard_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        DashboardStat(
+                            label = stringResource(R.string.dashboard_total_por_cobrar),
+                            value = formatMoney(dashboard.totalPorCobrar)
+                        )
+                        DashboardStat(
+                            label = stringResource(R.string.dashboard_cobrado_mes),
+                            value = formatMoney(dashboard.cobradoDelMes)
+                        )
+                        DashboardStat(
+                            label = stringResource(R.string.dashboard_clientes_mora),
+                            value = dashboard.clientesEnMora.toString()
+                        )
+                    }
+                }
 
                 ElevatedActionCard(
                     icon = Icons.Outlined.People,
@@ -402,5 +435,26 @@ fun HomeScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun DashboardStat(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }

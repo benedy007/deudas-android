@@ -15,6 +15,7 @@ import androidx.navigation.navArgument
 import com.benedy.deudas.DeudasApp
 import com.benedy.deudas.R
 import com.benedy.deudas.ui.AddClientViewModelFactory
+import com.benedy.deudas.ui.HomeViewModelFactory
 import com.benedy.deudas.ui.AddDebtViewModelFactory
 import com.benedy.deudas.ui.AddProductViewModelFactory
 import com.benedy.deudas.ui.ClientDetailViewModelFactory
@@ -34,6 +35,7 @@ import com.benedy.deudas.ui.debt.AddDebtScreen
 import com.benedy.deudas.ui.history.PaymentHistoryScreen
 import com.benedy.deudas.ui.history.PaymentHistoryViewModel
 import com.benedy.deudas.ui.home.HomeScreen
+import com.benedy.deudas.ui.home.HomeViewModel
 import com.benedy.deudas.ui.settings.SettingsScreen
 import com.benedy.deudas.ui.settings.SettingsViewModel
 import com.benedy.deudas.ui.settings.SettingsViewModelFactory
@@ -46,6 +48,7 @@ object Routes {
     const val LOGIN = "login"
     const val HOME = "home"
     const val ADD_CLIENT = "add_client"
+    const val EDIT_CLIENT = "edit_client/{clientId}"
     const val CLIENTS = "clients"
     const val SELECT_CLIENT_CHARGE = "select_client_charge"
     const val CLIENT_DETAIL = "client/{clientId}?charge={charge}"
@@ -60,6 +63,8 @@ object Routes {
 
     fun clientDetail(clientId: Long, charge: Boolean = false) =
         "client/$clientId?charge=$charge"
+
+    fun editClient(clientId: Long) = "edit_client/$clientId"
 
     fun addDebt(clientId: Long) = "client/$clientId/add_debt"
 
@@ -101,9 +106,14 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
             val backupVm = viewModel<BackupViewModel>(
                 factory = BackupViewModelFactory(app.authRepository, crm)
             )
+            val homeVm = viewModel<HomeViewModel>(
+                factory = HomeViewModelFactory(crm)
+            )
+            val dashboard by homeVm.dashboard.collectAsStateWithLifecycle()
             HomeScreen(
                 uiState = uiState,
                 backupViewModel = backupVm,
+                dashboard = dashboard,
                 onLogout = { authViewModel.signOut() },
                 onAddClient = { navController.navigate(Routes.ADD_CLIENT) },
                 onCharge = { navController.navigate(Routes.SELECT_CLIENT_CHARGE) },
@@ -172,6 +182,24 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
             )
         }
 
+        composable(
+            route = Routes.EDIT_CLIENT,
+            arguments = listOf(navArgument("clientId") { type = NavType.LongType })
+        ) { entry ->
+            val clientId = entry.arguments!!.getLong("clientId")
+            val vm = viewModel<com.benedy.deudas.ui.clients.AddClientViewModel>(
+                key = "edit_client_$clientId",
+                factory = AddClientViewModelFactory(crm, editClientId = clientId)
+            )
+            AddClientScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() },
+                onSaved = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
         composable(Routes.CLIENTS) {
             val vm = viewModel<com.benedy.deudas.ui.clients.ClientsListViewModel>(
                 factory = ClientsListViewModelFactory(crm)
@@ -187,12 +215,14 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
         composable(Routes.SELECT_CLIENT_CHARGE) {
             val vm = viewModel<com.benedy.deudas.ui.clients.ClientsListViewModel>(
                 key = "select_charge",
-                factory = ClientsListViewModelFactory(crm)
+                factory = ClientsListViewModelFactory(crm, onlyWithBalance = true)
             )
             ClientsListScreen(
                 viewModel = vm,
                 title = stringResource(R.string.select_client_title),
                 subtitle = stringResource(R.string.select_client_for_charge),
+                emptyMessage = stringResource(R.string.no_clients_with_debt),
+                showAddFab = false,
                 onBack = { navController.popBackStack() },
                 onAddClient = { navController.navigate(Routes.ADD_CLIENT) },
                 onClientClick = { id ->
@@ -227,6 +257,9 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
                 },
                 onPaymentHistory = {
                     navController.navigate(Routes.clientPaymentHistory(clientId))
+                },
+                onEditClient = {
+                    navController.navigate(Routes.editClient(clientId))
                 }
             )
         }

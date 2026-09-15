@@ -1,39 +1,37 @@
 # Arquitectura — Deudas (Android)
 
-## V1.3.6 (actual)
+## V1.4.0 (actual)
 
 ```
 ui/
   auth/          Login + AuthViewModel
-  home/          Home hub (acciones + sección Respaldo)
+  home/          Home hub + dashboard (totales) + Respaldo
   backup/        BackupViewModel (Drive authorize + upload/download)
-  clients/       Lista + Agregar cliente
-  clientdetail/  Detalle / Cobrar (deudas + pagos)
-  debt/          Agregar deuda (manual o desde producto + plan de cuotas opcional)
-  payment/       Registrar pago
+  clients/       Lista (todos / solo con deuda) + Agregar/Editar + foto
+  clientdetail/  Detalle / Cobrar + recordatorio WA + estado de cuenta + notas cobranza
+  debt/          Agregar deuda (+ aviso límite de crédito)
+  payment/       Registrar pago (waterfall)
   receipt/       Comprobante + WhatsApp
-  settings/      Ajustes compañía (nombre, teléfono, pie de recibo)
-  history/       Historial de pagos + reenvío
+  settings/      Ajustes compañía
+  history/       Historial de pagos + reenvío + eliminar
   products/      Lista + Agregar producto
   navigation/    NavGraph con auth gate
   theme/
 data/
   auth/          AuthRepository + UserSession (Credential Manager)
-  backup/        DriveAuthHelper + DriveBackupRepository + BackupPayload
-  local/         Room (entities, daos, DeudasDatabase + MIGRATION_1_2 … MIGRATION_4_5)
-  repository/    DebtCrmRepository (export/import backup)
+  backup/        DriveAuthHelper + DriveBackupRepository + BackupPayload (v2)
+  local/         Room (entities, daos, DeudasDatabase + MIGRATION_1_2 … MIGRATION_5_6)
+  repository/    DebtCrmRepository (export/import, dashboard, statement)
 ```
 
 - **UI:** Jetpack Compose + Material 3 + Navigation Compose
-- **Home:** hub de acciones + Respaldo (Drive) para sesión Google
-- **Auth:** Google Sign-In (Credential Manager + WEB_CLIENT_ID) + modo invitado
-- **Drive:** AuthorizationClient pide `drive.appdata` al respaldar/restaurar; REST API v3
-- **Persistencia:** Room local (offline). Sin Firebase. Sin `fallbackToDestructiveMigration`
-- **WhatsApp:** texto vía wa.me; imagen vía system share sheet (elige WhatsApp)
-- **Pagos:** waterfall sin sobrepago; historial/comprobante permiten eliminar pago (revierte saldo)
-- **Plan de cuotas:** frecuencia + % opcional al crear deuda; etiqueta en detalle; cuota sugerida al pagar (no bloquea)
-- **Ajustes:** DataStore (nombre/teléfono/comentario de compañía en recibos)
-- **UI:** Material 3 con elevación, esquinas grandes, gradientes suaves (ScreenGradient / ElevatedActionCard)
+- **Dashboard:** total por cobrar, cobrado del mes, clientes en mora
+- **Cobrar:** picker solo clientes con saldo > 0; Ver clientes muestra todos
+- **Foto cliente:** cámara/galería → filesDir/client_photos + photoPath
+- **Crédito / saldo inicial:** límite con aviso; saldo inicial crea deuda al crear cliente
+- **Cobranza:** notas + fecha prometida; recordatorio WhatsApp; estado de cuenta (imagen)
+- **Auth / Drive / pagos waterfall / cuotas / ajustes:** igual que v1.3.x
+- **Migraciones:** explícitas, sin `fallbackToDestructiveMigration`
 
 ## Principios
 

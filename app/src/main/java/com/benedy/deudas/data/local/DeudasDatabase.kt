@@ -7,10 +7,12 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.benedy.deudas.data.local.dao.ClientDao
+import com.benedy.deudas.data.local.dao.CobranzaNoteDao
 import com.benedy.deudas.data.local.dao.DebtDao
 import com.benedy.deudas.data.local.dao.PaymentDao
 import com.benedy.deudas.data.local.dao.ProductDao
 import com.benedy.deudas.data.local.entity.ClientEntity
+import com.benedy.deudas.data.local.entity.CobranzaNoteEntity
 import com.benedy.deudas.data.local.entity.DebtEntity
 import com.benedy.deudas.data.local.entity.PaymentEntity
 import com.benedy.deudas.data.local.entity.ProductEntity
@@ -20,9 +22,10 @@ import com.benedy.deudas.data.local.entity.ProductEntity
         ClientEntity::class,
         DebtEntity::class,
         PaymentEntity::class,
-        ProductEntity::class
+        ProductEntity::class,
+        CobranzaNoteEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class DeudasDatabase : RoomDatabase() {
@@ -30,16 +33,12 @@ abstract class DeudasDatabase : RoomDatabase() {
     abstract fun debtDao(): DebtDao
     abstract fun paymentDao(): PaymentDao
     abstract fun productDao(): ProductDao
+    abstract fun cobranzaNoteDao(): CobranzaNoteDao
 
     companion object {
         @Volatile
         private var INSTANCE: DeudasDatabase? = null
 
-        /**
-         * v1 → v2: optional address fields on clients.
-         * Never wipe user data on schema bumps — add Migrations instead of
-         * fallbackToDestructiveMigration().
-         */
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE clients ADD COLUMN direccionCasa TEXT")
@@ -48,11 +47,6 @@ abstract class DeudasDatabase : RoomDatabase() {
             }
         }
 
-        /**
-         * v2 → v3: optional delivery/due date on debts + payment groupId
-         * for waterfall / multi-debt receipts. Must also create the
-         * index declared on PaymentEntity (Index("groupId")).
-         */
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE debts ADD COLUMN fechaEntrega INTEGER")
@@ -63,9 +57,6 @@ abstract class DeudasDatabase : RoomDatabase() {
             }
         }
 
-        /**
-         * v1 → v3: chained safety for installs that skip intermediate bumps.
-         */
         val MIGRATION_1_3 = object : Migration(1, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 MIGRATION_1_2.migrate(db)
@@ -73,11 +64,6 @@ abstract class DeudasDatabase : RoomDatabase() {
             }
         }
 
-        /**
-         * v3 → v4: recover devices that already reached schema v3 without
-         * the groupId index (old MIGRATION_2_3 only ADDed columns).
-         * CREATE INDEX IF NOT EXISTS is idempotent — no data wipe.
-         */
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
@@ -86,9 +72,6 @@ abstract class DeudasDatabase : RoomDatabase() {
             }
         }
 
-        /**
-         * v1 → v4 / v2 → v4: full upgrade paths without destructive fallback.
-         */
         val MIGRATION_1_4 = object : Migration(1, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 MIGRATION_1_2.migrate(db)
@@ -104,10 +87,6 @@ abstract class DeudasDatabase : RoomDatabase() {
             }
         }
 
-        /**
-         * v4 → v5: optional installment plan on debts
-         * (planFrequency TEXT, planPercent REAL). Nullable — existing rows stay null.
-         */
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE debts ADD COLUMN planFrequency TEXT")
@@ -139,6 +118,66 @@ abstract class DeudasDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v5 → v6 (v1.4.0): client photoPath + creditLimit + cobranza_notes table.
+         * No destructive migration.
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE clients ADD COLUMN photoPath TEXT")
+                db.execSQL("ALTER TABLE clients ADD COLUMN creditLimit REAL")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `cobranza_notes` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `clientId` INTEGER NOT NULL,
+                        `text` TEXT NOT NULL,
+                        `promisedDate` INTEGER,
+                        `createdAt` INTEGER NOT NULL,
+                        FOREIGN KEY(`clientId`) REFERENCES `clients`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_cobranza_notes_clientId` ON `cobranza_notes` (`clientId`)"
+                )
+            }
+        }
+
+        val MIGRATION_4_6 = object : Migration(4, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                MIGRATION_4_5.migrate(db)
+                MIGRATION_5_6.migrate(db)
+            }
+        }
+
+        val MIGRATION_3_6 = object : Migration(3, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                MIGRATION_3_4.migrate(db)
+                MIGRATION_4_5.migrate(db)
+                MIGRATION_5_6.migrate(db)
+            }
+        }
+
+        val MIGRATION_2_6 = object : Migration(2, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                MIGRATION_2_3.migrate(db)
+                MIGRATION_3_4.migrate(db)
+                MIGRATION_4_5.migrate(db)
+                MIGRATION_5_6.migrate(db)
+            }
+        }
+
+        val MIGRATION_1_6 = object : Migration(1, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                MIGRATION_1_2.migrate(db)
+                MIGRATION_2_3.migrate(db)
+                MIGRATION_3_4.migrate(db)
+                MIGRATION_4_5.migrate(db)
+                MIGRATION_5_6.migrate(db)
+            }
+        }
+
         fun getInstance(context: Context): DeudasDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -156,7 +195,12 @@ abstract class DeudasDatabase : RoomDatabase() {
                         MIGRATION_4_5,
                         MIGRATION_3_5,
                         MIGRATION_2_5,
-                        MIGRATION_1_5
+                        MIGRATION_1_5,
+                        MIGRATION_5_6,
+                        MIGRATION_4_6,
+                        MIGRATION_3_6,
+                        MIGRATION_2_6,
+                        MIGRATION_1_6
                     )
                     .build()
                     .also { INSTANCE = it }

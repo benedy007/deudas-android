@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
@@ -66,6 +67,24 @@ fun AddDebtScreen(
 
     LaunchedEffect(ui.saved) {
         if (ui.saved) onSaved()
+    }
+
+    if (ui.creditWarn) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissCreditWarn() },
+            title = { Text(stringResource(R.string.credit_limit_warn_title)) },
+            text = { Text(stringResource(R.string.credit_limit_warn_message)) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.confirmDespiteCreditWarn() }) {
+                    Text(stringResource(R.string.credit_limit_warn_continue))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissCreditWarn() }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 
     if (showDatePicker) {
