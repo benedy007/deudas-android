@@ -83,13 +83,7 @@ fun HomeScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                if (isGuest) {
-                                    stringResource(R.string.exit_guest)
-                                } else {
-                                    stringResource(R.string.sign_out)
-                                }
-                            )
+                            Text(stringResource(R.string.exit_guest))
                         }
                     }
                 }
@@ -104,16 +98,28 @@ fun HomeScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = if (isGuest) {
-                    stringResource(R.string.guest_display_name) + " · " +
-                        stringResource(R.string.test_mode_label)
-                } else {
-                    session?.displayName ?: stringResource(R.string.user_fallback)
-                },
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
+            if (isGuest) {
+                Text(
+                    text = stringResource(R.string.guest_display_name) + " · " +
+                        stringResource(R.string.test_mode_label),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            } else {
+                Text(
+                    text = session?.displayName
+                        ?: stringResource(R.string.user_fallback),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                session?.email?.takeIf { it.isNotBlank() }?.let { email ->
+                    Text(
+                        text = email,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             Text(
                 text = stringResource(R.string.hub_title),
                 style = MaterialTheme.typography.headlineSmall,
@@ -122,6 +128,12 @@ fun HomeScreen(
             if (isGuest) {
                 Text(
                     text = stringResource(R.string.hub_subtitle_guest),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.hub_subtitle_google),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -80,15 +80,15 @@ fun LoginScreen(
             if (uiState.isLoading) {
                 CircularProgressIndicator()
             } else {
-                // CTA principal: modo prueba / sin cuenta (sin Google)
+                // CTA principal: Google Sign-In
                 Button(
-                    onClick = onContinueAsGuest,
+                    onClick = onGoogleSignIn,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)
                 ) {
                     Text(
-                        text = stringResource(R.string.continue_without_account),
+                        text = stringResource(R.string.google_sign_in),
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
@@ -96,30 +96,30 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = stringResource(R.string.test_mode_hint),
+                    text = stringResource(R.string.google_sign_in_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // Google: secundario — llegará cuando la app esté más avanzada
+                // Secundario: invitado / sin cuenta
                 OutlinedButton(
-                    onClick = onGoogleSignIn,
+                    onClick = onContinueAsGuest,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
                 ) {
                     Text(
-                        text = stringResource(R.string.google_sign_in_later),
+                        text = stringResource(R.string.continue_without_account),
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.google_coming_later),
+                    text = stringResource(R.string.test_mode_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center

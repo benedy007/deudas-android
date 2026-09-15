@@ -11,6 +11,7 @@ import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
 import com.benedy.deudas.BuildConfig
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,9 +20,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
 
 /**
- * Repositorio de autenticación: modo invitado (principal V1) + Google Identity.
+ * Repositorio de autenticación: Google Identity (Credential Manager) + modo invitado.
  * Sin Firebase. La sesión se guarda localmente para el auth gate de la app.
  *
+ * WEB_CLIENT_ID (tipo Web / serverClientId) llega vía BuildConfig desde local.properties.
  * Futuro: el mismo usuario Google servirá para Google Drive (OAuth scopes).
  */
 class AuthRepository(appContext: Context) {
@@ -40,7 +42,7 @@ class AuthRepository(appContext: Context) {
         get() = _session.value != null
 
     /**
-     * Entrada principal V1: sesión de invitado / modo prueba, sin Google ni WEB_CLIENT_ID.
+     * Sesión de invitado / modo prueba, sin Google.
      */
     fun signInAsGuest(): UserSession {
         val session = UserSession(
@@ -56,36 +58,90 @@ class AuthRepository(appContext: Context) {
     }
 
     /**
+     * Google Sign-In vía Credential Manager.
+     * 1) GetGoogleIdOption (cuentas en el dispositivo)
+     * 2) Si no hay credencial → GetSignInWithGoogleOption (botón / flujo completo)
+     *
      * @param activityContext debe ser una Activity (Credential Manager muestra UI).
      */
     suspend fun signInWithGoogle(activityContext: Context): Result<UserSession> {
-        return try {
-            val googleIdOption = GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(false)
-                .setServerClientId(BuildConfig.WEB_CLIENT_ID)
-                .setAutoSelectEnabled(false)
-                .setNonce(UUID.randomUUID().toString())
-                .build()
-
-            val request = GetCredentialRequest.Builder()
-                .addCredentialOption(googleIdOption)
-                .build()
-
-            val result = credentialManager.getCredential(
-                request = request,
-                context = activityContext
+        val clientId = BuildConfig.WEB_CLIENT_ID
+        if (clientId.isBlank() ||
+            clientId.startsWith("YOUR_WEB_CLIENT_ID") ||
+            clientId.contains("dummyplaceholder") ||
+            clientId.contains("xxxxxxxx")
+        ) {
+            return Result.failure(
+                AuthException.Failed(
+                    "WEB_CLIENT_ID no configurado. Añádelo en local.properties."
+                )
             )
+        }
 
-            handleCredential(result.credential)
+        return try {
+            requestGoogleIdCredential(activityContext, clientId, filterAuthorized = false)
         } catch (e: GetCredentialCancellationException) {
             Result.failure(AuthException.Cancelled)
         } catch (e: NoCredentialException) {
-            Result.failure(AuthException.NoCredential)
+            // Fallback: flujo explícito "Sign in with Google"
+            try {
+                requestSignInWithGoogle(activityContext, clientId)
+            } catch (e2: GetCredentialCancellationException) {
+                Result.failure(AuthException.Cancelled)
+            } catch (e2: NoCredentialException) {
+                Result.failure(AuthException.NoCredential)
+            } catch (e2: GetCredentialException) {
+                Result.failure(AuthException.Failed(e2.message ?: "Error de credenciales"))
+            } catch (e2: Exception) {
+                Result.failure(AuthException.Failed(e2.message ?: "Error desconocido"))
+            }
         } catch (e: GetCredentialException) {
             Result.failure(AuthException.Failed(e.message ?: "Error de credenciales"))
         } catch (e: Exception) {
             Result.failure(AuthException.Failed(e.message ?: "Error desconocido"))
         }
+    }
+
+    private suspend fun requestGoogleIdCredential(
+        activityContext: Context,
+        clientId: String,
+        filterAuthorized: Boolean
+    ): Result<UserSession> {
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(filterAuthorized)
+            .setServerClientId(clientId)
+            .setAutoSelectEnabled(false)
+            .setNonce(UUID.randomUUID().toString())
+            .build()
+
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
+
+        val result = credentialManager.getCredential(
+            request = request,
+            context = activityContext
+        )
+        return handleCredential(result.credential)
+    }
+
+    private suspend fun requestSignInWithGoogle(
+        activityContext: Context,
+        clientId: String
+    ): Result<UserSession> {
+        val option = GetSignInWithGoogleOption.Builder(clientId)
+            .setNonce(UUID.randomUUID().toString())
+            .build()
+
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(option)
+            .build()
+
+        val result = credentialManager.getCredential(
+            request = request,
+            context = activityContext
+        )
+        return handleCredential(result.credential)
     }
 
     private fun handleCredential(

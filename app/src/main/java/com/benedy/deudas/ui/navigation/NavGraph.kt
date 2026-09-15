@@ -76,7 +76,10 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
             LoginScreen(
                 uiState = uiState,
                 onContinueAsGuest = { authViewModel.continueAsGuest() },
-                onGoogleSignIn = { authViewModel.signInWithGoogle(context) },
+                onGoogleSignIn = {
+                    val activity = context as? android.app.Activity ?: context
+                    authViewModel.signInWithGoogle(activity)
+                },
                 onClearError = { authViewModel.clearError() }
             )
         }

@@ -3,12 +3,12 @@
     <string name="app_name">Deudas</string>
 
     <!-- Login -->
-    <string name="login_subtitle">Gestiona clientes y deudas de forma sencilla.\nEntra en modo prueba para explorar la app.</string>
+    <string name="login_subtitle">Gestiona clientes y deudas de forma sencilla.\nConecta con Google o entra sin cuenta.</string>
     <string name="continue_without_account">Continuar sin cuenta</string>
-    <string name="test_mode_hint">Modo prueba · sin inicio de sesión</string>
-    <string name="google_sign_in_later">Continuar con Google</string>
-    <string name="google_coming_later">Inicio con Google · próximamente</string>
-    <string name="login_footer">V1.1 · Modo prueba con datos locales.\nRespaldo Google Drive llegará pronto.</string>
+    <string name="test_mode_hint">Modo prueba · datos solo en este dispositivo</string>
+    <string name="google_sign_in">Conectar con Google</string>
+    <string name="google_sign_in_hint">Usa tu cuenta de Google para iniciar sesión</string>
+    <string name="login_footer">V1.1 · Datos locales en el dispositivo.\nRespaldo Google Drive llegará pronto.</string>
 
     <!-- Sesión -->
     <string name="guest_display_name">Invitado</string>
@@ -16,11 +16,12 @@
     <string name="user_fallback">Usuario</string>
     <string name="profile_photo">Foto de perfil</string>
     <string name="exit_guest">Salir</string>
-    <string name="sign_out">Cerrar sesión</string>
+    <string name="sign_out">Salir</string>
 
     <!-- Hub -->
     <string name="hub_title">¿Qué deseas hacer?</string>
     <string name="hub_subtitle_guest">Modo prueba · datos solo en este dispositivo</string>
+    <string name="hub_subtitle_google">Sesión con Google · datos locales en este dispositivo</string>
     <string name="action_add_client">Agregar cliente</string>
     <string name="action_add_client_desc">Crear perfil con nombre y WhatsApp</string>
     <string name="action_charge">Cobrar</string>

@@ -23,7 +23,7 @@ data/
 - **UI:** Jetpack Compose + Material 3 + Navigation Compose
 - **Home:** hub de acciones — Agregar cliente, Cobrar, Agregar producto, Ver clientes, Ver productos
 - **Cobrar:** siempre empieza eligiendo cliente
-- **Auth:** modo invitado + Google Identity (Credential Manager)
+- **Auth:** Google Sign-In (Credential Manager + WEB_CLIENT_ID) + modo invitado
 - **Persistencia:** Room local (offline). Sin Firebase
 - **WhatsApp:** wa.me deep links / share
 - **Drive:** stub («próximamente»)
