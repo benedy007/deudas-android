@@ -314,6 +314,9 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
                 viewModel = vm,
                 onDone = {
                     navController.popBackStack(Routes.HOME, inclusive = false)
+                },
+                onDeleted = {
+                    navController.popBackStack()
                 }
             )
         }

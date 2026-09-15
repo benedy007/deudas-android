@@ -15,7 +15,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.automirrored.outlined.TextSnippet
 import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -56,19 +57,51 @@ import com.benedy.deudas.ui.util.formatMoney
 @Composable
 fun ReceiptScreen(
     viewModel: ReceiptViewModel,
-    onDone: () -> Unit
+    onDone: () -> Unit,
+    onDeleted: () -> Unit = onDone
 ) {
     val data by viewModel.data.collectAsStateWithLifecycle()
+    val deleting by viewModel.deleting.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val settingsRepo = remember {
         (context.applicationContext as DeudasApp).settingsRepository
     }
     var companySettings by remember { mutableStateOf(CompanySettings()) }
     var showShareChooser by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         companySettings = settingsRepo.settings.first()
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { if (!deleting) showDeleteConfirm = false },
+            title = { Text(stringResource(R.string.delete_payment_title)) },
+            text = { Text(stringResource(R.string.delete_payment_message)) },
+            confirmButton = {
+                TextButton(
+                    enabled = !deleting,
+                    onClick = {
+                        viewModel.deletePayment {
+                            showDeleteConfirm = false
+                            onDeleted()
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.delete_payment_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !deleting,
+                    onClick = { showDeleteConfirm = false }
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -78,6 +111,20 @@ fun ReceiptScreen(
                 navigationIcon = {
                     IconButton(onClick = onDone) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
+                },
+                actions = {
+                    if (data != null) {
+                        IconButton(
+                            enabled = !deleting,
+                            onClick = { showDeleteConfirm = true }
+                        ) {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                contentDescription = stringResource(R.string.delete_payment_confirm),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             )
@@ -152,6 +199,18 @@ fun ReceiptScreen(
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.send_whatsapp))
             }
+            OutlinedButton(
+                onClick = { showDeleteConfirm = true },
+                enabled = !deleting,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Icon(Icons.Outlined.Delete, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.delete_payment_confirm))
+            }
             OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.done))
             }
@@ -188,8 +247,7 @@ fun ReceiptScreen(
                             shareReceiptImage(
                                 context = context,
                                 data = r,
-                                settings = companySettings,
-                                toWhatsApp = true
+                                settings = companySettings
                             )
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -200,29 +258,6 @@ fun ReceiptScreen(
                             Text(stringResource(R.string.share_as_image))
                             Text(
                                 stringResource(R.string.share_as_image_hint),
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        }
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            showShareChooser = false
-                            shareReceiptImage(
-                                context = context,
-                                data = r,
-                                settings = companySettings,
-                                toWhatsApp = false
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Outlined.Share, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Column(horizontalAlignment = Alignment.Start) {
-                            Text(stringResource(R.string.share_system_sheet))
-                            Text(
-                                stringResource(R.string.share_system_sheet_hint),
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }
@@ -265,8 +300,7 @@ fun ReceiptScreen(
 private fun shareReceiptImage(
     context: android.content.Context,
     data: ReceiptData,
-    settings: CompanySettings,
-    toWhatsApp: Boolean
+    settings: CompanySettings
 ) {
     try {
         val uri = ReceiptImageRenderer.renderForShare(
@@ -280,17 +314,12 @@ private fun shareReceiptImage(
             companyPhone = settings.displayPhone(),
             footerNote = settings.displayFooter()
         )
-        // Both paths use system chooser (confirmed working with WhatsApp pick)
-        if (toWhatsApp) {
-            WhatsAppHelper.shareImageToWhatsApp(
-                context = context,
-                phone = data.clientPhone,
-                imageUri = uri,
-                caption = null
-            )
-        } else {
-            WhatsAppHelper.shareImageSystem(context, uri)
-        }
+        WhatsAppHelper.shareImageToWhatsApp(
+            context = context,
+            phone = data.clientPhone,
+            imageUri = uri,
+            caption = null
+        )
     } catch (e: Exception) {
         val detail = e.message?.takeIf { it.isNotBlank() } ?: e.javaClass.simpleName
         Toast.makeText(

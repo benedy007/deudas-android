@@ -1,6 +1,6 @@
 # Arquitectura — Deudas (Android)
 
-## V1.3.4 (actual)
+## V1.3.5 (actual)
 
 ```
 ui/
@@ -30,6 +30,7 @@ data/
 - **Drive:** AuthorizationClient pide `drive.appdata` al respaldar/restaurar; REST API v3
 - **Persistencia:** Room local (offline). Sin Firebase. Sin `fallbackToDestructiveMigration`
 - **WhatsApp:** texto vía wa.me; imagen vía system share sheet (elige WhatsApp)
+- **Pagos:** waterfall sin sobrepago; historial/comprobante permiten eliminar pago (revierte saldo)
 - **Ajustes:** DataStore (nombre/teléfono/comentario de compañía en recibos)
 - **UI:** Material 3 con elevación, esquinas grandes, gradientes suaves (ScreenGradient / ElevatedActionCard)
 

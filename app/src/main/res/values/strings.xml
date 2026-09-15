@@ -8,7 +8,7 @@
     <string name="test_mode_hint">Modo prueba · datos solo en este dispositivo</string>
     <string name="google_sign_in">Conectar con Google</string>
     <string name="google_sign_in_hint">Usa tu cuenta de Google para iniciar sesión</string>
-    <string name="login_footer">V1.3 · Datos locales + respaldo opcional en Google Drive.</string>
+    <string name="login_footer">V1.3.5 · Datos locales + respaldo opcional en Google Drive.</string>
 
     <!-- Sesión -->
     <string name="guest_display_name">Invitado</string>
@@ -104,8 +104,6 @@
     <string name="payment_over_total">El monto no puede ser mayor que la deuda actual</string>
     <string name="share_receipt_failed">No se pudo compartir el comprobante. Prueba enviar como texto.</string>
     <string name="share_receipt_failed_detail">No se pudo compartir la imagen: %1$s</string>
-    <string name="share_system_sheet">Compartir (otras apps)</string>
-    <string name="share_system_sheet_hint">Guarda o envía con el menú del sistema</string>
     <string name="receipt_applied_to">Aplicado a</string>
     <string name="debt_description">Descripción</string>
     <string name="debt_amount">Monto</string>
@@ -138,6 +136,9 @@
     <string name="payment_history_empty">Aún no hay pagos registrados.</string>
     <string name="payment_history_allocations">Aplicado a %1$d deudas</string>
     <string name="payment_history_resend_hint">Toca para ver y reenviar</string>
+    <string name="delete_payment_title">¿Eliminar este pago?</string>
+    <string name="delete_payment_message">Se devolverá el monto a la deuda.</string>
+    <string name="delete_payment_confirm">Eliminar pago</string>
 
     <string name="back">Volver</string>
 

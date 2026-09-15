@@ -206,6 +206,31 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
     }
 
     /**
+     * Undoes a payment (or waterfall group): restores each debt's remainingBalance
+     * (capped at originalAmount), then deletes the payment row(s).
+     */
+    suspend fun deletePaymentGroup(paymentId: Long) {
+        db.withTransaction {
+            val payments = getPaymentGroup(paymentId)
+            if (payments.isEmpty()) return@withTransaction
+            for (payment in payments) {
+                val debt = debtDao.getById(payment.debtId) ?: continue
+                val restored = (debt.remainingBalance + payment.amount)
+                    .coerceAtMost(debt.originalAmount)
+                debtDao.update(debt.copy(remainingBalance = restored))
+            }
+            val groupId = payments.firstOrNull()?.groupId
+            if (groupId != null && payments.any { it.groupId == groupId }) {
+                paymentDao.deleteByGroupId(groupId)
+            } else {
+                for (p in payments) {
+                    paymentDao.deleteById(p.id)
+                }
+            }
+        }
+    }
+
+    /**
      * Cobrar con producto: crea deuda por el precio del producto y opcionalmente registra pago parcial/total.
      */
     suspend fun chargeProduct(
