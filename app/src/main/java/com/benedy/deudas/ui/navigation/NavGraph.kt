@@ -23,6 +23,8 @@ import com.benedy.deudas.ui.ProductsListViewModelFactory
 import com.benedy.deudas.ui.ReceiptViewModelFactory
 import com.benedy.deudas.ui.RegisterPaymentViewModelFactory
 import com.benedy.deudas.ui.auth.AuthViewModel
+import com.benedy.deudas.ui.backup.BackupViewModel
+import com.benedy.deudas.ui.backup.BackupViewModelFactory
 import com.benedy.deudas.ui.auth.LoginScreen
 import com.benedy.deudas.ui.clientdetail.ClientDetailScreen
 import com.benedy.deudas.ui.clients.AddClientScreen
@@ -85,8 +87,12 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
         }
 
         composable(Routes.HOME) {
+            val backupVm = viewModel<BackupViewModel>(
+                factory = BackupViewModelFactory(app.authRepository, crm)
+            )
             HomeScreen(
                 uiState = uiState,
+                backupViewModel = backupVm,
                 onLogout = { authViewModel.signOut() },
                 onAddClient = { navController.navigate(Routes.ADD_CLIENT) },
                 onCharge = { navController.navigate(Routes.SELECT_CLIENT_CHARGE) },

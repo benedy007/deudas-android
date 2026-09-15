@@ -15,9 +15,18 @@ interface PaymentDao {
     @Query("SELECT * FROM payments WHERE debtId = :debtId ORDER BY createdAt DESC")
     fun observeByDebt(debtId: Long): Flow<List<PaymentEntity>>
 
+    @Query("SELECT * FROM payments ORDER BY id ASC")
+    suspend fun getAll(): List<PaymentEntity>
+
     @Query("SELECT * FROM payments WHERE id = :id")
     suspend fun getById(id: Long): PaymentEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(payment: PaymentEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(payments: List<PaymentEntity>)
+
+    @Query("DELETE FROM payments")
+    suspend fun deleteAll()
 }

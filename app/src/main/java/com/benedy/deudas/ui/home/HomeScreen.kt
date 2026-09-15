@@ -1,5 +1,9 @@
 package com.benedy.deudas.ui.home
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,14 +15,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.AddBusiness
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Payments
-import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,22 +38,30 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benedy.deudas.R
 import com.benedy.deudas.ui.auth.AuthUiState
+import com.benedy.deudas.ui.backup.BackupViewModel
+import com.benedy.deudas.ui.components.ElevatedActionCard
+import com.benedy.deudas.ui.components.ScreenGradient
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     uiState: AuthUiState,
+    backupViewModel: BackupViewModel,
     onLogout: () -> Unit,
     onAddClient: () -> Unit,
     onCharge: () -> Unit,
@@ -54,13 +71,56 @@ fun HomeScreen(
 ) {
     val session = uiState.session
     val isGuest = session?.isGuest == true
+    val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val activity = context as Activity
+
+    val authLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        backupViewModel.clearPendingConsent()
+        if (result.resultCode == Activity.RESULT_OK) {
+            backupViewModel.onAuthorizationResult(activity, result.data)
+        } else {
+            backupViewModel.onAuthorizationCancelled()
+        }
+    }
+
+    LaunchedEffect(backupState.pendingConsent) {
+        val sender = backupState.pendingConsent ?: return@LaunchedEffect
+        authLauncher.launch(IntentSenderRequest.Builder(sender).build())
+    }
+
+    if (backupState.showRestoreConfirm) {
+        AlertDialog(
+            onDismissRequest = { backupViewModel.dismissRestoreConfirm() },
+            title = { Text(stringResource(R.string.backup_restore_confirm_title)) },
+            text = { Text(stringResource(R.string.backup_restore_confirm_message)) },
+            confirmButton = {
+                TextButton(onClick = { backupViewModel.confirmRestore(activity) }) {
+                    Text(stringResource(R.string.backup_restore_confirm_yes))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { backupViewModel.dismissRestoreConfirm() }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 
     Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
+                title = {
+                    Text(
+                        stringResource(R.string.app_name),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.92f),
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
@@ -75,6 +135,7 @@ fun HomeScreen(
                         OutlinedButton(
                             onClick = onLogout,
                             modifier = Modifier.padding(end = 8.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.outlinedButtonColors()
                         ) {
                             Icon(
@@ -90,137 +151,177 @@ fun HomeScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            if (isGuest) {
-                Text(
-                    text = stringResource(R.string.guest_display_name) + " · " +
-                        stringResource(R.string.test_mode_label),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            } else {
-                Text(
-                    text = session?.displayName
-                        ?: stringResource(R.string.user_fallback),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                session?.email?.takeIf { it.isNotBlank() }?.let { email ->
+        ScreenGradient(modifier = Modifier.padding(padding)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                if (isGuest) {
                     Text(
-                        text = email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = stringResource(R.string.guest_display_name) + " · " +
+                            stringResource(R.string.test_mode_label),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
                     )
+                } else {
+                    Text(
+                        text = session?.displayName
+                            ?: stringResource(R.string.user_fallback),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    session?.email?.takeIf { it.isNotBlank() }?.let { email ->
+                        Text(
+                            text = email,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-            }
-            Text(
-                text = stringResource(R.string.hub_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            if (isGuest) {
                 Text(
-                    text = stringResource(R.string.hub_subtitle_guest),
+                    text = stringResource(R.string.hub_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if (isGuest) {
+                        stringResource(R.string.hub_subtitle_guest)
+                    } else {
+                        stringResource(R.string.hub_subtitle_google)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            } else {
-                Text(
-                    text = stringResource(R.string.hub_subtitle_google),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
 
-            HubActionCard(
-                icon = Icons.Outlined.PersonAdd,
-                title = stringResource(R.string.action_add_client),
-                description = stringResource(R.string.action_add_client_desc),
-                onClick = onAddClient
-            )
-            HubActionCard(
-                icon = Icons.Outlined.Payments,
-                title = stringResource(R.string.action_charge),
-                description = stringResource(R.string.action_charge_desc),
-                onClick = onCharge
-            )
-            HubActionCard(
-                icon = Icons.Outlined.AddBusiness,
-                title = stringResource(R.string.action_add_product),
-                description = stringResource(R.string.action_add_product_desc),
-                onClick = onAddProduct
-            )
-            HubActionCard(
-                icon = Icons.Outlined.People,
-                title = stringResource(R.string.action_view_clients),
-                description = stringResource(R.string.action_view_clients_desc),
-                onClick = onViewClients
-            )
-            HubActionCard(
-                icon = Icons.Outlined.Inventory2,
-                title = stringResource(R.string.action_view_products),
-                description = stringResource(R.string.action_view_products_desc),
-                onClick = onViewProducts
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.drive_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun HubActionCard(
-    icon: ImageVector,
-    title: String,
-    description: String,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                ElevatedActionCard(
+                    icon = Icons.Outlined.PersonAdd,
+                    title = stringResource(R.string.action_add_client),
+                    description = stringResource(R.string.action_add_client_desc),
+                    onClick = onAddClient,
+                    elevation = 12.dp
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                ElevatedActionCard(
+                    icon = Icons.Outlined.Payments,
+                    title = stringResource(R.string.action_charge),
+                    description = stringResource(R.string.action_charge_desc),
+                    onClick = onCharge,
+                    elevation = 12.dp
                 )
+                ElevatedActionCard(
+                    icon = Icons.Outlined.AddBusiness,
+                    title = stringResource(R.string.action_add_product),
+                    description = stringResource(R.string.action_add_product_desc),
+                    onClick = onAddProduct
+                )
+                ElevatedActionCard(
+                    icon = Icons.Outlined.People,
+                    title = stringResource(R.string.action_view_clients),
+                    description = stringResource(R.string.action_view_clients_desc),
+                    onClick = onViewClients,
+                    elevation = 8.dp
+                )
+                ElevatedActionCard(
+                    icon = Icons.Outlined.Inventory2,
+                    title = stringResource(R.string.action_view_products),
+                    description = stringResource(R.string.action_view_products_desc),
+                    onClick = onViewProducts,
+                    elevation = 8.dp
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.backup_section_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                if (isGuest) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Text(
+                            text = stringResource(R.string.backup_guest_message),
+                            modifier = Modifier.padding(18.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    Button(
+                        onClick = { backupViewModel.requestBackup(activity) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        enabled = !backupState.isBusy,
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 6.dp,
+                            pressedElevation = 2.dp
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.CloudUpload,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.backup_to_drive))
+                    }
+                    OutlinedButton(
+                        onClick = { backupViewModel.requestRestoreConfirm() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        enabled = !backupState.isBusy,
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.CloudDownload,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.restore_from_drive))
+                    }
+                    if (backupState.isBusy) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(R.string.backup_in_progress),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                    backupState.statusMessage?.let { msg ->
+                        Text(
+                            text = msg,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = if (backupState.isError) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }

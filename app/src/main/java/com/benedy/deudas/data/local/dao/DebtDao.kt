@@ -16,6 +16,9 @@ interface DebtDao {
     @Query("SELECT * FROM debts WHERE clientId = :clientId AND remainingBalance > 0 ORDER BY createdAt DESC")
     fun observeOpenByClient(clientId: Long): Flow<List<DebtEntity>>
 
+    @Query("SELECT * FROM debts ORDER BY id ASC")
+    suspend fun getAll(): List<DebtEntity>
+
     @Query("SELECT * FROM debts WHERE id = :id")
     suspend fun getById(id: Long): DebtEntity?
 
@@ -25,6 +28,12 @@ interface DebtDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(debt: DebtEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(debts: List<DebtEntity>)
+
     @Update
     suspend fun update(debt: DebtEntity)
+
+    @Query("DELETE FROM debts")
+    suspend fun deleteAll()
 }

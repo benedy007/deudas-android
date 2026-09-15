@@ -8,7 +8,7 @@
     <string name="test_mode_hint">Modo prueba · datos solo en este dispositivo</string>
     <string name="google_sign_in">Conectar con Google</string>
     <string name="google_sign_in_hint">Usa tu cuenta de Google para iniciar sesión</string>
-    <string name="login_footer">V1.1 · Datos locales en el dispositivo.\nRespaldo Google Drive llegará pronto.</string>
+    <string name="login_footer">V1.2 · Datos locales + respaldo opcional en Google Drive.</string>
 
     <!-- Sesión -->
     <string name="guest_display_name">Invitado</string>
@@ -32,7 +32,14 @@
     <string name="action_view_clients_desc">Lista y detalle de clientes</string>
     <string name="action_view_products">Ver productos</string>
     <string name="action_view_products_desc">Catálogo de productos</string>
-    <string name="drive_note">Respaldo en Google Drive: próximamente</string>
+    <string name="backup_section_title">Respaldo</string>
+    <string name="backup_to_drive">Respaldar en Google Drive</string>
+    <string name="restore_from_drive">Restaurar desde Google Drive</string>
+    <string name="backup_guest_message">Para respaldar o restaurar, cierra sesión de invitado y usa «Conectar con Google».</string>
+    <string name="backup_in_progress">Procesando…</string>
+    <string name="backup_restore_confirm_title">¿Restaurar respaldo?</string>
+    <string name="backup_restore_confirm_message">Esto reemplazará todos los clientes, deudas, pagos y productos de este dispositivo con los datos del respaldo en Google Drive. No se puede deshacer.</string>
+    <string name="backup_restore_confirm_yes">Restaurar</string>
 
     <!-- Clientes -->
     <string name="clients_title">Clientes</string>

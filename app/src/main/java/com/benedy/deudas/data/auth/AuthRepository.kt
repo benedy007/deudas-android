@@ -24,7 +24,7 @@ import java.util.UUID
  * Sin Firebase. La sesión se guarda localmente para el auth gate de la app.
  *
  * WEB_CLIENT_ID (tipo Web / serverClientId) llega vía BuildConfig desde local.properties.
- * Futuro: el mismo usuario Google servirá para Google Drive (OAuth scopes).
+ * Drive: scopes adicionales vía AuthorizationClient (DriveAuthHelper) al respaldar.
  */
 class AuthRepository(appContext: Context) {
 

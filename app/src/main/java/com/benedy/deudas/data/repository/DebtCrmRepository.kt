@@ -1,5 +1,7 @@
 package com.benedy.deudas.data.repository
 
+import androidx.room.withTransaction
+import com.benedy.deudas.data.backup.BackupPayload
 import com.benedy.deudas.data.local.DeudasDatabase
 import com.benedy.deudas.data.local.entity.ClientEntity
 import com.benedy.deudas.data.local.entity.DebtEntity
@@ -11,7 +13,7 @@ import kotlinx.coroutines.flow.Flow
  * Repositorio local (Room) para clientes, deudas, pagos y productos.
  * Funciona offline; sin Firebase.
  */
-class DebtCrmRepository(db: DeudasDatabase) {
+class DebtCrmRepository(private val db: DeudasDatabase) {
 
     private val clientDao = db.clientDao()
     private val debtDao = db.debtDao()
@@ -121,5 +123,34 @@ class DebtCrmRepository(db: DeudasDatabase) {
             registerPayment(debtId, payNow, paymentNote)
         } else null
         return debtId to paymentId
+    }
+
+    // --- Backup / restore ---
+
+    suspend fun exportBackupPayload(): BackupPayload {
+        return BackupPayload(
+            clients = clientDao.getAll(),
+            debts = debtDao.getAll(),
+            payments = paymentDao.getAll(),
+            products = productDao.getAll()
+        )
+    }
+
+    /**
+     * Replaces all local CRM data with the backup snapshot (same IDs).
+     * Deletes in FK-safe order, then inserts clients → products → debts → payments.
+     */
+    suspend fun importBackupPayload(payload: BackupPayload) {
+        db.withTransaction {
+            paymentDao.deleteAll()
+            debtDao.deleteAll()
+            clientDao.deleteAll()
+            productDao.deleteAll()
+
+            if (payload.clients.isNotEmpty()) clientDao.insertAll(payload.clients)
+            if (payload.products.isNotEmpty()) productDao.insertAll(payload.products)
+            if (payload.debts.isNotEmpty()) debtDao.insertAll(payload.debts)
+            if (payload.payments.isNotEmpty()) paymentDao.insertAll(payload.payments)
+        }
     }
 }

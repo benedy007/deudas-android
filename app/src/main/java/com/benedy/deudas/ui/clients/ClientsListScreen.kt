@@ -15,7 +15,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -60,7 +62,7 @@ fun ClientsListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddClient) {
+            FloatingActionButton(onClick = onAddClient, elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(defaultElevation = 10.dp)) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_client_title))
             }
         }
@@ -122,7 +124,12 @@ private fun ClientRow(client: ClientEntity, onClick: () -> Unit) {
     } else {
         client.phone + "\n" + extras.joinToString(" · ")
     }
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
         ListItem(
             headlineContent = { Text(client.name) },
             supportingContent = { Text(supporting) },
