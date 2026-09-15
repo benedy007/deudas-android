@@ -1,6 +1,6 @@
 # Arquitectura — Deudas (Android)
 
-## V1.3 (actual)
+## V1.3.4 (actual)
 
 ```
 ui/
@@ -12,6 +12,8 @@ ui/
   debt/          Agregar deuda (manual o desde producto)
   payment/       Registrar pago
   receipt/       Comprobante + WhatsApp
+  settings/      Ajustes compañía (nombre, teléfono, pie de recibo)
+  history/       Historial de pagos + reenvío
   products/      Lista + Agregar producto
   navigation/    NavGraph con auth gate
   theme/
@@ -27,7 +29,8 @@ data/
 - **Auth:** Google Sign-In (Credential Manager + WEB_CLIENT_ID) + modo invitado
 - **Drive:** AuthorizationClient pide `drive.appdata` al respaldar/restaurar; REST API v3
 - **Persistencia:** Room local (offline). Sin Firebase. Sin `fallbackToDestructiveMigration`
-- **WhatsApp:** wa.me deep links / share
+- **WhatsApp:** texto vía wa.me; imagen vía system share sheet (elige WhatsApp)
+- **Ajustes:** DataStore (nombre/teléfono/comentario de compañía en recibos)
 - **UI:** Material 3 con elevación, esquinas grandes, gradientes suaves (ScreenGradient / ElevatedActionCard)
 
 ## Principios

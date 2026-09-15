@@ -1,13 +1,10 @@
 package com.benedy.deudas.ui.util
 
 import android.app.Activity
-import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 
 object WhatsAppHelper {
 
@@ -45,36 +42,42 @@ object WhatsAppHelper {
     }
 
     /**
-     * Shares a receipt image. Intentionally does NOT set EXTRA_TEXT —
-     * WhatsApp often drops EXTRA_STREAM when a caption is also present.
-     * Prefers Activity context (no NEW_TASK) when available.
+     * Shares a receipt image via the system share sheet (same path that works when
+     * the user picks WhatsApp). Does not rely on setPackage as the only path;
+     * direct package targeting fails on many devices.
+     *
+     * Intentionally does not set EXTRA_TEXT: WhatsApp often drops EXTRA_STREAM
+     * when a caption is also present.
      */
+    @Suppress("UNUSED_PARAMETER")
     fun shareImageToWhatsApp(
         context: Context,
         phone: String,
         imageUri: Uri,
-        @Suppress("UNUSED_PARAMETER") caption: String? = null
+        caption: String? = null
     ) {
-        // phone kept for API compatibility; image share opens WhatsApp picker
-        shareImageOnly(context, imageUri, preferWhatsApp = true)
+        // phone kept for API compatibility; image share opens system chooser
+        shareImageViaChooser(context, imageUri)
     }
 
     /**
      * System share sheet for the receipt image (no caption).
+     * Same implementation as shareImageToWhatsApp; both use the working chooser path.
      */
     fun shareImageSystem(context: Context, imageUri: Uri) {
-        shareImageOnly(context, imageUri, preferWhatsApp = false)
+        shareImageViaChooser(context, imageUri)
     }
 
-    private fun shareImageOnly(
-        context: Context,
-        imageUri: Uri,
-        preferWhatsApp: Boolean
-    ) {
-        val base = Intent(Intent.ACTION_SEND).apply {
-            type = "image/png"
+    /**
+     * ACTION_SEND with MIME image slash-star, MediaStore/FileProvider URI,
+     * ClipData and FLAG_GRANT_READ_URI_PERMISSION, opened with Intent.createChooser.
+     * Matches the path confirmed working on device.
+     */
+    private fun shareImageViaChooser(context: Context, imageUri: Uri) {
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "image/*"
             putExtra(Intent.EXTRA_STREAM, imageUri)
-            // Do NOT put EXTRA_TEXT — WhatsApp drops the stream when both are set
+            // Do NOT put EXTRA_TEXT: WhatsApp drops the stream when both are set
             clipData = ClipData.newUri(context.contentResolver, "recibo", imageUri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
@@ -91,39 +94,11 @@ object WhatsAppHelper {
             }
         }
 
-        if (preferWhatsApp) {
-            for (pkg in WHATSAPP_PACKAGES) {
-                if (!isPackageInstalled(context, pkg)) continue
-                val targeted = Intent(base).setPackage(pkg)
-                try {
-                    if (canResolve(context, targeted)) {
-                        startSafely(context, targeted)
-                        return
-                    }
-                } catch (_: ActivityNotFoundException) {
-                } catch (_: SecurityException) {
-                } catch (_: Exception) {
-                }
-            }
-        }
-
-        val chooser = Intent.createChooser(Intent(base).setPackage(null), null).apply {
+        val chooser = Intent.createChooser(send, null).apply {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            clipData = base.clipData
+            clipData = send.clipData
         }
-        try {
-            startSafely(context, chooser)
-        } catch (e: Exception) {
-            val loose = Intent(base).apply {
-                type = "image/*"
-                setPackage(null)
-            }
-            val looseChooser = Intent.createChooser(loose, null).apply {
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = ClipData.newUri(context.contentResolver, "recibo", imageUri)
-            }
-            startSafely(context, looseChooser)
-        }
+        startSafely(context, chooser)
     }
 
     /**
@@ -149,44 +124,23 @@ object WhatsAppHelper {
         return null
     }
 
-    private fun isPackageInstalled(context: Context, packageName: String): Boolean {
-        return try {
-            if (Build.VERSION.SDK_INT >= 33) {
-                context.packageManager.getPackageInfo(
-                    packageName,
-                    PackageManager.PackageInfoFlags.of(0)
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                context.packageManager.getPackageInfo(packageName, 0)
-            }
-            true
-        } catch (_: Exception) {
-            false
-        }
-    }
-
-    private fun canResolve(context: Context, intent: Intent): Boolean {
-        val pm = context.packageManager
-        return if (Build.VERSION.SDK_INT >= 33) {
-            pm.resolveActivity(
-                intent,
-                PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong())
-            ) != null
-        } else {
-            @Suppress("DEPRECATION")
-            pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) != null
-        }
-    }
-
     fun buildReceiptText(
         clientName: String,
         amount: Double,
         debtDescription: String,
         dateMs: Long,
-        remaining: Double
+        remaining: Double,
+        companyName: String = "Deudas",
+        companyPhone: String? = null,
+        footerNote: String = "Gracias por su pago"
     ): String = buildString {
+        val brand = companyName.ifBlank { "Deudas" }
+        val note = footerNote.ifBlank { "Gracias por su pago" }
         appendLine("🧾 *Comprobante de pago*")
+        appendLine("*$brand*")
+        companyPhone?.trim()?.takeIf { it.isNotEmpty() }?.let { phone ->
+            appendLine("Tel: $phone")
+        }
         appendLine()
         appendLine("Cliente: $clientName")
         appendLine("Concepto: $debtDescription")
@@ -194,8 +148,12 @@ object WhatsAppHelper {
         appendLine("Saldo restante: ${formatMoney(remaining)}")
         appendLine("Fecha: ${formatDate(dateMs)}")
         appendLine()
-        append("Gracias por su pago.")
+        append(note)
+        if (!note.trim().endsWith(".")) {
+            append(".")
+        }
         appendLine()
-        append("— Deudas")
+        appendLine()
+        append("— $brand")
     }
 }

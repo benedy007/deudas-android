@@ -31,14 +31,20 @@ object ReceiptImageRenderer {
         amount: Double,
         debtDescription: String,
         dateMs: Long,
-        remaining: Double
+        remaining: Double,
+        companyName: String = "Deudas",
+        companyPhone: String? = null,
+        footerNote: String = "Gracias por su pago"
     ): Uri {
         val bitmap = renderBitmap(
             clientName = clientName,
             amount = amount,
             debtDescription = debtDescription,
             dateMs = dateMs,
-            remaining = remaining
+            remaining = remaining,
+            companyName = companyName,
+            companyPhone = companyPhone,
+            footerNote = footerNote
         )
         try {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -62,9 +68,13 @@ object ReceiptImageRenderer {
         amount: Double,
         debtDescription: String,
         dateMs: Long,
-        remaining: Double
+        remaining: Double,
+        companyName: String = "Deudas",
+        companyPhone: String? = null,
+        footerNote: String = "Gracias por su pago"
     ): Uri = renderForShare(
-        context, clientName, amount, debtDescription, dateMs, remaining
+        context, clientName, amount, debtDescription, dateMs, remaining,
+        companyName, companyPhone, footerNote
     )
 
     /**
@@ -139,7 +149,10 @@ object ReceiptImageRenderer {
         amount: Double,
         debtDescription: String,
         dateMs: Long,
-        remaining: Double
+        remaining: Double,
+        companyName: String = "Deudas",
+        companyPhone: String? = null,
+        footerNote: String = "Gracias por su pago"
     ): Bitmap {
         val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = 0xFF1B5E20.toInt()
@@ -207,13 +220,20 @@ object ReceiptImageRenderer {
             "Fecha" to formatDate(dateMs)
         )
 
-        var contentHeight = PADDING + 80f + 48f + 36f + 28f + 100f + 40f
+        val phoneLine = companyPhone?.trim()?.takeIf { it.isNotEmpty() }
+        var contentHeight = PADDING + 80f + 48f + 36f +
+            (if (phoneLine != null) 40f else 0f) + 28f + 100f + 40f
         rows.forEach { (_, value) ->
             contentHeight += 36f
             contentHeight += measureMultilineHeight(value, valuePaint, WIDTH - PADDING * 4)
             contentHeight += 36f
         }
-        contentHeight += 48f + 40f + PADDING
+        val footerPreview = buildString {
+            append(footerNote.ifBlank { "Gracias por su pago" })
+            append(" · ")
+            append(companyName.ifBlank { "Deudas" })
+        }
+        contentHeight += 48f + measureMultilineHeight(footerPreview, footerPaint, WIDTH - PADDING * 4) + 24f + PADDING
 
         val height = contentHeight.toInt().coerceAtLeast(1200)
         val bitmap = Bitmap.createBitmap(WIDTH, height, Bitmap.Config.ARGB_8888)
@@ -247,8 +267,12 @@ object ReceiptImageRenderer {
         var y = cardTop + 80f
         canvas.drawText("Comprobante de pago", WIDTH / 2f, y, titlePaint)
         y += 48f
-        canvas.drawText("Deudas", WIDTH / 2f, y, appPaint)
+        canvas.drawText(companyName.ifBlank { "Deudas" }, WIDTH / 2f, y, appPaint)
         y += 36f
+        if (phoneLine != null) {
+            canvas.drawText(phoneLine, WIDTH / 2f, y, labelCenterPaint)
+            y += 40f
+        }
         canvas.drawLine(cardLeft + PADDING, y, cardRight - PADDING, y, dividerPaint)
         y += 56f
 
@@ -268,8 +292,19 @@ object ReceiptImageRenderer {
             y += 36f
         }
 
-        y = cardBottom - 48f
-        canvas.drawText("Gracias por su pago · Deudas", WIDTH / 2f, y, footerPaint)
+        val footer = buildString {
+            append(footerNote.ifBlank { "Gracias por su pago" })
+            append(" · ")
+            append(companyName.ifBlank { "Deudas" })
+        }
+        val footerLines = wrapLines(footer, footerPaint, WIDTH - PADDING * 4)
+        val fm = footerPaint.fontMetrics
+        val lineH = fm.descent - fm.ascent + fm.leading
+        y = cardBottom - 24f - (footerLines.size - 1) * lineH
+        footerLines.forEach { line ->
+            canvas.drawText(line, WIDTH / 2f, y, footerPaint)
+            y += lineH
+        }
         return bitmap
     }
 

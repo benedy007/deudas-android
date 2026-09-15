@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.first
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -43,7 +44,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.benedy.deudas.DeudasApp
 import com.benedy.deudas.R
+import com.benedy.deudas.data.settings.CompanySettings
 import com.benedy.deudas.ui.util.ReceiptImageRenderer
 import com.benedy.deudas.ui.util.WhatsAppHelper
 import com.benedy.deudas.ui.util.formatDate
@@ -57,8 +60,16 @@ fun ReceiptScreen(
 ) {
     val data by viewModel.data.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val settingsRepo = remember {
+        (context.applicationContext as DeudasApp).settingsRepository
+    }
+    var companySettings by remember { mutableStateOf(CompanySettings()) }
     var showShareChooser by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        companySettings = settingsRepo.settings.first()
+    }
 
     Scaffold(
         topBar = {
@@ -177,6 +188,7 @@ fun ReceiptScreen(
                             shareReceiptImage(
                                 context = context,
                                 data = r,
+                                settings = companySettings,
                                 toWhatsApp = true
                             )
                         },
@@ -199,6 +211,7 @@ fun ReceiptScreen(
                             shareReceiptImage(
                                 context = context,
                                 data = r,
+                                settings = companySettings,
                                 toWhatsApp = false
                             )
                         },
@@ -223,7 +236,10 @@ fun ReceiptScreen(
                                 amount = r.amount,
                                 debtDescription = r.debtDescription,
                                 dateMs = r.dateMs,
-                                remaining = r.remaining
+                                remaining = r.remaining,
+                                companyName = companySettings.displayName(),
+                                companyPhone = companySettings.displayPhone(),
+                                footerNote = companySettings.displayFooter()
                             )
                             WhatsAppHelper.shareTextToWhatsApp(context, r.clientPhone, text)
                         },
@@ -249,6 +265,7 @@ fun ReceiptScreen(
 private fun shareReceiptImage(
     context: android.content.Context,
     data: ReceiptData,
+    settings: CompanySettings,
     toWhatsApp: Boolean
 ) {
     try {
@@ -258,10 +275,13 @@ private fun shareReceiptImage(
             amount = data.amount,
             debtDescription = data.debtDescription,
             dateMs = data.dateMs,
-            remaining = data.remaining
+            remaining = data.remaining,
+            companyName = settings.displayName(),
+            companyPhone = settings.displayPhone(),
+            footerNote = settings.displayFooter()
         )
+        // Both paths use system chooser (confirmed working with WhatsApp pick)
         if (toWhatsApp) {
-            // Image only — no caption EXTRA_TEXT (WhatsApp drops stream otherwise)
             WhatsAppHelper.shareImageToWhatsApp(
                 context = context,
                 phone = data.clientPhone,

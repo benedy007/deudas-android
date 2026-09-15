@@ -127,9 +127,9 @@
     <string name="receipt_date">Fecha</string>
     <string name="send_whatsapp">Enviar por WhatsApp</string>
     <string name="share_receipt_title">¿Cómo quieres enviar el comprobante?</string>
-    <string name="share_receipt_subtitle">Recomendado: imagen para que se vea claro en el chat</string>
+    <string name="share_receipt_subtitle">Imagen clara en el chat — se abre compartir para elegir WhatsApp</string>
     <string name="share_as_image">Enviar como imagen</string>
-    <string name="share_as_image_hint">Recomendado</string>
+    <string name="share_as_image_hint">Se abre compartir — elige WhatsApp</string>
     <string name="share_as_text">Enviar como texto</string>
     <string name="done">Listo</string>
 
@@ -140,4 +140,19 @@
     <string name="payment_history_resend_hint">Toca para ver y reenviar</string>
 
     <string name="back">Volver</string>
+
+    <!-- Ajustes -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_subtitle">Datos de tu compañía que aparecen en los comprobantes.</string>
+    <string name="settings_company_name">Nombre de la compañía</string>
+    <string name="settings_company_name_hint">Si lo dejas vacío, se usa «Deudas»</string>
+    <string name="settings_company_phone">Teléfono de la compañía</string>
+    <string name="settings_company_phone_hint">Ej. 18095551234</string>
+    <string name="settings_company_phone_support">Opcional · aparece en el recibo</string>
+    <string name="settings_receipt_footer">Comentario del recibo</string>
+    <string name="settings_receipt_footer_hint">Texto al pie del comprobante. Vacío = «Gracias por su pago»</string>
+    <string name="settings_saving">Guardando…</string>
+    <string name="settings_saved">Guardado</string>
+    <string name="settings_save_failed">No se pudo guardar: %1$s</string>
+    <string name="settings_content_description">Ajustes</string>
 </resources>

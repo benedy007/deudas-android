@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.AlertDialog
@@ -35,6 +36,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -95,7 +97,8 @@ fun HomeScreen(
     onAddProduct: () -> Unit,
     onViewClients: () -> Unit,
     onViewProducts: () -> Unit,
-    onPaymentHistory: () -> Unit
+    onPaymentHistory: () -> Unit,
+    onSettings: () -> Unit
 ) {
     val session = uiState.session
     val isGuest = session?.isGuest == true
@@ -152,6 +155,12 @@ fun HomeScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
+                    IconButton(onClick = onSettings) {
+                        Icon(
+                            imageVector = Icons.Outlined.Settings,
+                            contentDescription = stringResource(R.string.settings_content_description)
+                        )
+                    }
                     if (uiState.isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier

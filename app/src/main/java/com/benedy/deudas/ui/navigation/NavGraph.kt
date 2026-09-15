@@ -34,6 +34,9 @@ import com.benedy.deudas.ui.debt.AddDebtScreen
 import com.benedy.deudas.ui.history.PaymentHistoryScreen
 import com.benedy.deudas.ui.history.PaymentHistoryViewModel
 import com.benedy.deudas.ui.home.HomeScreen
+import com.benedy.deudas.ui.settings.SettingsScreen
+import com.benedy.deudas.ui.settings.SettingsViewModel
+import com.benedy.deudas.ui.settings.SettingsViewModelFactory
 import com.benedy.deudas.ui.payment.RegisterPaymentScreen
 import com.benedy.deudas.ui.products.AddProductScreen
 import com.benedy.deudas.ui.products.ProductsListScreen
@@ -52,6 +55,7 @@ object Routes {
     const val REGISTER_PAYMENT = "client/{clientId}/pay?debtId={debtId}"
     const val RECEIPT = "receipt/{paymentId}"
     const val PAYMENT_HISTORY = "payment_history"
+    const val SETTINGS = "settings"
     const val CLIENT_PAYMENT_HISTORY = "client/{clientId}/payments"
 
     fun clientDetail(clientId: Long, charge: Boolean = false) =
@@ -106,7 +110,18 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
                 onAddProduct = { navController.navigate(Routes.ADD_PRODUCT) },
                 onViewClients = { navController.navigate(Routes.CLIENTS) },
                 onViewProducts = { navController.navigate(Routes.PRODUCTS) },
-                onPaymentHistory = { navController.navigate(Routes.PAYMENT_HISTORY) }
+                onPaymentHistory = { navController.navigate(Routes.PAYMENT_HISTORY) },
+                onSettings = { navController.navigate(Routes.SETTINGS) }
+            )
+        }
+
+        composable(Routes.SETTINGS) {
+            val vm = viewModel<SettingsViewModel>(
+                factory = SettingsViewModelFactory(app.settingsRepository)
+            )
+            SettingsScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() }
             )
         }
 

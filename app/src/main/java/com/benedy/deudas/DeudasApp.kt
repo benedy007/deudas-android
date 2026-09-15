@@ -5,16 +5,20 @@ import android.util.Log
 import com.benedy.deudas.data.auth.AuthRepository
 import com.benedy.deudas.data.local.DeudasDatabase
 import com.benedy.deudas.data.repository.DebtCrmRepository
+import com.benedy.deudas.data.settings.SettingsRepository
 
 class DeudasApp : Application() {
     lateinit var authRepository: AuthRepository
         private set
     lateinit var crmRepository: DebtCrmRepository
         private set
+    lateinit var settingsRepository: SettingsRepository
+        private set
 
     override fun onCreate() {
         super.onCreate()
         authRepository = AuthRepository(applicationContext)
+        settingsRepository = SettingsRepository(applicationContext)
         val db = DeudasDatabase.getInstance(applicationContext)
         // Force open so migration/schema errors surface at startup with a clear log
         // instead of a mysterious crash on the first CRM screen.
