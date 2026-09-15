@@ -20,7 +20,7 @@ import com.benedy.deudas.data.local.entity.ProductEntity
         PaymentEntity::class,
         ProductEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class DeudasDatabase : RoomDatabase() {

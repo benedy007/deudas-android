@@ -81,6 +81,30 @@ fun AddClientScreen(
             )
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
+                value = ui.direccionCasa,
+                onValueChange = viewModel::onDireccionCasa,
+                label = { Text(stringResource(R.string.client_home_address)) },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = ui.lugarTrabajo,
+                onValueChange = viewModel::onLugarTrabajo,
+                label = { Text(stringResource(R.string.client_workplace)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = ui.direccionTrabajo,
+                onValueChange = viewModel::onDireccionTrabajo,
+                label = { Text(stringResource(R.string.client_work_address)) },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
                 value = ui.notes,
                 onValueChange = viewModel::onNotes,
                 label = { Text(stringResource(R.string.client_notes)) },

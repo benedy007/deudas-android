@@ -9,5 +9,8 @@ data class ClientEntity(
     val name: String,
     val phone: String,
     val notes: String? = null,
+    val direccionCasa: String? = null,
+    val lugarTrabajo: String? = null,
+    val direccionTrabajo: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

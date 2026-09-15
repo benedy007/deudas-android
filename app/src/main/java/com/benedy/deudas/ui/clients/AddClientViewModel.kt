@@ -13,6 +13,9 @@ data class AddClientUiState(
     val name: String = "",
     val phone: String = "",
     val notes: String = "",
+    val direccionCasa: String = "",
+    val lugarTrabajo: String = "",
+    val direccionTrabajo: String = "",
     val error: String? = null,
     val savedClientId: Long? = null,
     val saving: Boolean = false
@@ -27,6 +30,9 @@ class AddClientViewModel(
     fun onName(v: String) = _ui.update { it.copy(name = v, error = null) }
     fun onPhone(v: String) = _ui.update { it.copy(phone = v, error = null) }
     fun onNotes(v: String) = _ui.update { it.copy(notes = v) }
+    fun onDireccionCasa(v: String) = _ui.update { it.copy(direccionCasa = v) }
+    fun onLugarTrabajo(v: String) = _ui.update { it.copy(lugarTrabajo = v) }
+    fun onDireccionTrabajo(v: String) = _ui.update { it.copy(direccionTrabajo = v) }
 
     fun save() {
         val s = _ui.value
@@ -36,7 +42,14 @@ class AddClientViewModel(
         }
         viewModelScope.launch {
             _ui.update { it.copy(saving = true) }
-            val id = repo.addClient(s.name, s.phone, s.notes.ifBlank { null })
+            val id = repo.addClient(
+                name = s.name,
+                phone = s.phone,
+                notes = s.notes.ifBlank { null },
+                direccionCasa = s.direccionCasa.ifBlank { null },
+                lugarTrabajo = s.lugarTrabajo.ifBlank { null },
+                direccionTrabajo = s.direccionTrabajo.ifBlank { null }
+            )
             _ui.update { it.copy(saving = false, savedClientId = id) }
         }
     }

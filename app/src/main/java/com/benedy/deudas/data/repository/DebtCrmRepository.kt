@@ -23,9 +23,24 @@ class DebtCrmRepository(db: DeudasDatabase) {
     fun observeClient(id: Long): Flow<ClientEntity?> = clientDao.observeById(id)
     suspend fun getClient(id: Long): ClientEntity? = clientDao.getById(id)
 
-    suspend fun addClient(name: String, phone: String, notes: String?): Long {
+    suspend fun addClient(
+        name: String,
+        phone: String,
+        notes: String?,
+        direccionCasa: String? = null,
+        lugarTrabajo: String? = null,
+        direccionTrabajo: String? = null
+    ): Long {
+        fun clean(v: String?) = v?.trim()?.ifBlank { null }
         return clientDao.insert(
-            ClientEntity(name = name.trim(), phone = phone.trim(), notes = notes?.trim()?.ifBlank { null })
+            ClientEntity(
+                name = name.trim(),
+                phone = phone.trim(),
+                notes = clean(notes),
+                direccionCasa = clean(direccionCasa),
+                lugarTrabajo = clean(lugarTrabajo),
+                direccionTrabajo = clean(direccionTrabajo)
+            )
         )
     }
 

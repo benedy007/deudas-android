@@ -134,6 +134,7 @@ private fun ClientDetailBody(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(text = client.phone, style = MaterialTheme.typography.bodyLarge)
+                    ClientAddressLines(client)
                     val notes = client.notes
                     if (!notes.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -204,6 +205,33 @@ private fun ClientDetailBody(
                 DebtCard(debt = debt, onPay = { onRegisterPayment(debt.id) })
             }
         }
+    }
+}
+
+
+@Composable
+private fun ClientAddressLines(client: ClientEntity) {
+    val homeLabel = stringResource(R.string.client_home_address)
+    val workPlaceLabel = stringResource(R.string.client_workplace)
+    val workAddrLabel = stringResource(R.string.client_work_address)
+    val lines = buildList {
+        client.direccionCasa?.takeIf { it.isNotBlank() }?.let { add(homeLabel to it) }
+        client.lugarTrabajo?.takeIf { it.isNotBlank() }?.let { add(workPlaceLabel to it) }
+        client.direccionTrabajo?.takeIf { it.isNotBlank() }?.let { add(workAddrLabel to it) }
+    }
+    if (lines.isEmpty()) return
+    Spacer(modifier = Modifier.height(8.dp))
+    lines.forEach { (label, value) ->
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Spacer(modifier = Modifier.height(4.dp))
     }
 }
 

@@ -112,10 +112,20 @@ fun ClientsListScreen(
 
 @Composable
 private fun ClientRow(client: ClientEntity, onClick: () -> Unit) {
+    val extras = listOfNotNull(
+        client.direccionCasa?.takeIf { it.isNotBlank() },
+        client.lugarTrabajo?.takeIf { it.isNotBlank() },
+        client.direccionTrabajo?.takeIf { it.isNotBlank() }
+    )
+    val supporting = if (extras.isEmpty()) {
+        client.phone
+    } else {
+        client.phone + "\n" + extras.joinToString(" · ")
+    }
     Card(modifier = Modifier.fillMaxWidth()) {
         ListItem(
             headlineContent = { Text(client.name) },
-            supportingContent = { Text(client.phone) },
+            supportingContent = { Text(supporting) },
             leadingContent = {
                 Icon(Icons.Outlined.Person, contentDescription = null)
             },

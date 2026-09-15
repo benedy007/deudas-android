@@ -43,6 +43,9 @@
     <string name="client_phone">Teléfono WhatsApp</string>
     <string name="client_phone_hint">Ej. 18095551234</string>
     <string name="client_notes">Notas (opcional)</string>
+    <string name="client_home_address">Dirección donde vive</string>
+    <string name="client_workplace">Dónde trabaja</string>
+    <string name="client_work_address">Dirección del trabajo</string>
     <string name="save">Guardar</string>
     <string name="cancel">Cancelar</string>
     <string name="open_whatsapp">Abrir WhatsApp</string>
