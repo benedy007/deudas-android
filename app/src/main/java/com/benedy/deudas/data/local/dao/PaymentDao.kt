@@ -27,6 +27,9 @@ interface PaymentDao {
     @Query("SELECT * FROM payments WHERE id = :id")
     suspend fun getById(id: Long): PaymentEntity?
 
+    @Query("SELECT * FROM payments WHERE clientId = :clientId ORDER BY createdAt DESC, id DESC")
+    suspend fun getByClient(clientId: Long): List<PaymentEntity>
+
     @Query("SELECT * FROM payments WHERE groupId = :groupId ORDER BY id ASC")
     suspend fun getByGroupId(groupId: Long): List<PaymentEntity>
 

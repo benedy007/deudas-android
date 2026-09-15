@@ -8,6 +8,7 @@ import com.benedy.deudas.data.local.entity.CobranzaNoteEntity
 import com.benedy.deudas.data.local.entity.DebtEntity
 import com.benedy.deudas.data.local.entity.PaymentEntity
 import com.benedy.deudas.data.local.entity.ProductEntity
+import com.benedy.deudas.data.payment.PaymentLifo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -264,8 +265,19 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
         }
     }
 
+    suspend fun canDeletePayment(paymentId: Long): Boolean {
+        val payment = paymentDao.getById(paymentId) ?: return false
+        val clientPayments = paymentDao.getByClient(payment.clientId)
+        return PaymentLifo.isDeletable(paymentId, clientPayments)
+    }
+
     suspend fun deletePaymentGroup(paymentId: Long) {
         db.withTransaction {
+            val seed = paymentDao.getById(paymentId) ?: return@withTransaction
+            val clientPayments = paymentDao.getByClient(seed.clientId)
+            if (!PaymentLifo.isDeletable(paymentId, clientPayments)) {
+                error(PaymentLifo.NOT_LATEST_MESSAGE)
+            }
             val payments = getPaymentGroup(paymentId)
             if (payments.isEmpty()) return@withTransaction
             for (payment in payments) {

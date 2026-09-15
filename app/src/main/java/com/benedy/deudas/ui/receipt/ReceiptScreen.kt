@@ -84,10 +84,20 @@ fun ReceiptScreen(
                 TextButton(
                     enabled = !deleting,
                     onClick = {
-                        viewModel.deletePayment {
-                            showDeleteConfirm = false
-                            onDeleted()
-                        }
+                        viewModel.deletePayment(
+                            onDone = {
+                                showDeleteConfirm = false
+                                onDeleted()
+                            },
+                            onError = { msg ->
+                                showDeleteConfirm = false
+                                Toast.makeText(
+                                    context,
+                                    msg.ifBlank { context.getString(R.string.delete_payment_not_latest) },
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        )
                     }
                 ) {
                     Text(stringResource(R.string.delete_payment_confirm))
@@ -114,7 +124,8 @@ fun ReceiptScreen(
                     }
                 },
                 actions = {
-                    if (data != null) {
+                    val r = data
+                    if (r != null && r.canDelete) {
                         IconButton(
                             enabled = !deleting,
                             onClick = { showDeleteConfirm = true }
@@ -199,17 +210,19 @@ fun ReceiptScreen(
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.send_whatsapp))
             }
-            OutlinedButton(
-                onClick = { showDeleteConfirm = true },
-                enabled = !deleting,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Icon(Icons.Outlined.Delete, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.delete_payment_confirm))
+            if (r.canDelete) {
+                OutlinedButton(
+                    onClick = { showDeleteConfirm = true },
+                    enabled = !deleting,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(Icons.Outlined.Delete, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.delete_payment_confirm))
+                }
             }
             OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.done))

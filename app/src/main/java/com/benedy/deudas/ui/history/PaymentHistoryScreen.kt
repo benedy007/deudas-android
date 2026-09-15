@@ -1,5 +1,6 @@
 package com.benedy.deudas.ui.history
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,7 +54,9 @@ fun PaymentHistoryScreen(
 ) {
     val items by viewModel.items.collectAsStateWithLifecycle()
     val deleting by viewModel.deleting.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var pendingDeleteId by remember { mutableStateOf<Long?>(null) }
+    val notLatestMessage = stringResource(R.string.delete_payment_not_latest)
 
     if (pendingDeleteId != null) {
         AlertDialog(
@@ -64,9 +68,14 @@ fun PaymentHistoryScreen(
                     enabled = !deleting,
                     onClick = {
                         val id = pendingDeleteId ?: return@TextButton
-                        viewModel.deletePayment(id) {
-                            pendingDeleteId = null
-                        }
+                        viewModel.deletePayment(
+                            receiptPaymentId = id,
+                            onDone = { pendingDeleteId = null },
+                            onError = { msg ->
+                                pendingDeleteId = null
+                                Toast.makeText(context, msg.ifBlank { notLatestMessage }, Toast.LENGTH_LONG).show()
+                            }
+                        )
                     }
                 ) {
                     Text(stringResource(R.string.delete_payment_confirm))
@@ -124,7 +133,13 @@ fun PaymentHistoryScreen(
                     PaymentHistoryCard(
                         item = item,
                         onClick = { onOpenReceipt(item.receiptPaymentId) },
-                        onDelete = { pendingDeleteId = item.receiptPaymentId }
+                        onDelete = {
+                            if (item.canDelete) {
+                                pendingDeleteId = item.receiptPaymentId
+                            } else {
+                                Toast.makeText(context, notLatestMessage, Toast.LENGTH_LONG).show()
+                            }
+                        }
                     )
                 }
             }
@@ -189,12 +204,14 @@ private fun PaymentHistoryCard(
                     fontWeight = FontWeight.Medium
                 )
             }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Outlined.Delete,
-                    contentDescription = stringResource(R.string.delete_payment_confirm),
-                    tint = MaterialTheme.colorScheme.error
-                )
+            if (item.canDelete) {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Outlined.Delete,
+                        contentDescription = stringResource(R.string.delete_payment_confirm),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }

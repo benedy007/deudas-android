@@ -1,6 +1,10 @@
 # Arquitectura — Deudas (Android)
 
-## V1.4.0 (actual)
+## V1.4.1 (actual)
+
+- **Eliminar pagos (LIFO):** solo el último pago (o grupo waterfall) del cliente se puede borrar; más antiguos: botón oculto; si se intenta: «Solo puedes eliminar el último pago de este cliente».
+
+## V1.4.0
 
 ```
 ui/

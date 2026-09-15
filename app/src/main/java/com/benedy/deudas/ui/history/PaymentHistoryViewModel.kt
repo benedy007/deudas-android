@@ -2,6 +2,7 @@ package com.benedy.deudas.ui.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.benedy.deudas.data.payment.PaymentLifo
 import com.benedy.deudas.data.repository.DebtCrmRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -35,13 +36,19 @@ class PaymentHistoryViewModel(
     private val _deleting = MutableStateFlow(false)
     val deleting: StateFlow<Boolean> = _deleting.asStateFlow()
 
-    fun deletePayment(receiptPaymentId: Long, onDone: () -> Unit = {}) {
+    fun deletePayment(
+        receiptPaymentId: Long,
+        onDone: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
         if (_deleting.value) return
         viewModelScope.launch {
             _deleting.value = true
             try {
                 repo.deletePaymentGroup(receiptPaymentId)
                 onDone()
+            } catch (e: IllegalStateException) {
+                onError(e.message ?: PaymentLifo.NOT_LATEST_MESSAGE)
             } finally {
                 _deleting.value = false
             }

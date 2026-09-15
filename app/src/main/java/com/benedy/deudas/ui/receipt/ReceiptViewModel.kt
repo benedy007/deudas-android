@@ -2,6 +2,7 @@ package com.benedy.deudas.ui.receipt
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.benedy.deudas.data.payment.PaymentLifo
 import com.benedy.deudas.data.repository.DebtCrmRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,8 @@ data class ReceiptData(
     val debtDescription: String,
     val dateMs: Long,
     val remaining: Double,
-    val allocations: List<ReceiptAllocationLine> = emptyList()
+    val allocations: List<ReceiptAllocationLine> = emptyList(),
+    val canDelete: Boolean = false
 )
 
 class ReceiptViewModel(
@@ -61,6 +63,7 @@ class ReceiptViewModel(
         } else {
             lines.joinToString(" · ") { "${it.debtDescription} (${formatCompact(it.amount)})" }
         }
+        val canDelete = repo.canDeletePayment(paymentId)
         _data.value = ReceiptData(
             paymentId = payments.first().id,
             clientName = client.name,
@@ -69,17 +72,20 @@ class ReceiptViewModel(
             debtDescription = concept,
             dateMs = payments.first().createdAt,
             remaining = clientRemaining,
-            allocations = lines
+            allocations = lines,
+            canDelete = canDelete
         )
     }
 
-    fun deletePayment(onDone: () -> Unit) {
+    fun deletePayment(onDone: () -> Unit, onError: (String) -> Unit = {}) {
         if (_deleting.value) return
         viewModelScope.launch {
             _deleting.value = true
             try {
                 repo.deletePaymentGroup(paymentId)
                 onDone()
+            } catch (e: IllegalStateException) {
+                onError(e.message ?: PaymentLifo.NOT_LATEST_MESSAGE)
             } finally {
                 _deleting.value = false
             }
