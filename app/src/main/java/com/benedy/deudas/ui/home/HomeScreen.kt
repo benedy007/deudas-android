@@ -56,6 +56,27 @@ import com.benedy.deudas.ui.auth.AuthUiState
 import com.benedy.deudas.ui.backup.BackupViewModel
 import com.benedy.deudas.ui.components.ElevatedActionCard
 import com.benedy.deudas.ui.components.ScreenGradient
+import com.benedy.deudas.ui.theme.HubAddClientContainer
+import com.benedy.deudas.ui.theme.HubAddClientContent
+import com.benedy.deudas.ui.theme.HubAddClientIconEnd
+import com.benedy.deudas.ui.theme.HubAddClientIconStart
+import com.benedy.deudas.ui.theme.HubAddProductContainer
+import com.benedy.deudas.ui.theme.HubAddProductContent
+import com.benedy.deudas.ui.theme.HubAddProductIconEnd
+import com.benedy.deudas.ui.theme.HubAddProductIconStart
+import com.benedy.deudas.ui.theme.HubChargeContainer
+import com.benedy.deudas.ui.theme.HubChargeContent
+import com.benedy.deudas.ui.theme.HubChargeIconEnd
+import com.benedy.deudas.ui.theme.HubChargeIconStart
+import com.benedy.deudas.ui.theme.HubClientsContainer
+import com.benedy.deudas.ui.theme.HubClientsContent
+import com.benedy.deudas.ui.theme.HubClientsIconEnd
+import com.benedy.deudas.ui.theme.HubClientsIconStart
+import com.benedy.deudas.ui.theme.HubProductsContainer
+import com.benedy.deudas.ui.theme.HubProductsContent
+import com.benedy.deudas.ui.theme.HubProductsIconEnd
+import com.benedy.deudas.ui.theme.HubProductsIconStart
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -200,38 +221,59 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(2.dp))
 
                 ElevatedActionCard(
-                    icon = Icons.Outlined.PersonAdd,
-                    title = stringResource(R.string.action_add_client),
-                    description = stringResource(R.string.action_add_client_desc),
-                    onClick = onAddClient,
-                    elevation = 12.dp
-                )
-                ElevatedActionCard(
-                    icon = Icons.Outlined.Payments,
-                    title = stringResource(R.string.action_charge),
-                    description = stringResource(R.string.action_charge_desc),
-                    onClick = onCharge,
-                    elevation = 12.dp
-                )
-                ElevatedActionCard(
-                    icon = Icons.Outlined.AddBusiness,
-                    title = stringResource(R.string.action_add_product),
-                    description = stringResource(R.string.action_add_product_desc),
-                    onClick = onAddProduct
-                )
-                ElevatedActionCard(
                     icon = Icons.Outlined.People,
                     title = stringResource(R.string.action_view_clients),
                     description = stringResource(R.string.action_view_clients_desc),
                     onClick = onViewClients,
-                    elevation = 8.dp
+                    elevation = 12.dp,
+                    containerColor = HubClientsContainer,
+                    contentColor = HubClientsContent,
+                    iconGradient = listOf(HubClientsIconStart, HubClientsIconEnd),
+                    iconTint = Color.White
                 )
                 ElevatedActionCard(
                     icon = Icons.Outlined.Inventory2,
                     title = stringResource(R.string.action_view_products),
                     description = stringResource(R.string.action_view_products_desc),
                     onClick = onViewProducts,
-                    elevation = 8.dp
+                    elevation = 12.dp,
+                    containerColor = HubProductsContainer,
+                    contentColor = HubProductsContent,
+                    iconGradient = listOf(HubProductsIconStart, HubProductsIconEnd),
+                    iconTint = Color.White
+                )
+                ElevatedActionCard(
+                    icon = Icons.Outlined.PersonAdd,
+                    title = stringResource(R.string.action_add_client),
+                    description = stringResource(R.string.action_add_client_desc),
+                    onClick = onAddClient,
+                    elevation = 10.dp,
+                    containerColor = HubAddClientContainer,
+                    contentColor = HubAddClientContent,
+                    iconGradient = listOf(HubAddClientIconStart, HubAddClientIconEnd),
+                    iconTint = Color.White
+                )
+                ElevatedActionCard(
+                    icon = Icons.Outlined.Payments,
+                    title = stringResource(R.string.action_charge),
+                    description = stringResource(R.string.action_charge_desc),
+                    onClick = onCharge,
+                    elevation = 10.dp,
+                    containerColor = HubChargeContainer,
+                    contentColor = HubChargeContent,
+                    iconGradient = listOf(HubChargeIconStart, HubChargeIconEnd),
+                    iconTint = Color.White
+                )
+                ElevatedActionCard(
+                    icon = Icons.Outlined.AddBusiness,
+                    title = stringResource(R.string.action_add_product),
+                    description = stringResource(R.string.action_add_product_desc),
+                    onClick = onAddProduct,
+                    elevation = 10.dp,
+                    containerColor = HubAddProductContainer,
+                    contentColor = HubAddProductContent,
+                    iconGradient = listOf(HubAddProductIconStart, HubAddProductIconEnd),
+                    iconTint = Color.White
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))

@@ -13,8 +13,14 @@ interface DebtDao {
     @Query("SELECT * FROM debts WHERE clientId = :clientId ORDER BY createdAt DESC")
     fun observeByClient(clientId: Long): Flow<List<DebtEntity>>
 
-    @Query("SELECT * FROM debts WHERE clientId = :clientId AND remainingBalance > 0 ORDER BY createdAt DESC")
+    @Query("SELECT * FROM debts WHERE clientId = :clientId AND remainingBalance > 0 ORDER BY createdAt ASC")
     fun observeOpenByClient(clientId: Long): Flow<List<DebtEntity>>
+
+    @Query("SELECT * FROM debts WHERE clientId = :clientId AND remainingBalance > 0 ORDER BY createdAt ASC")
+    suspend fun getOpenByClientOldestFirst(clientId: Long): List<DebtEntity>
+
+    @Query("SELECT * FROM debts ORDER BY id ASC")
+    fun observeAll(): Flow<List<DebtEntity>>
 
     @Query("SELECT * FROM debts ORDER BY id ASC")
     suspend fun getAll(): List<DebtEntity>
@@ -24,6 +30,9 @@ interface DebtDao {
 
     @Query("SELECT COALESCE(SUM(remainingBalance), 0) FROM debts WHERE clientId = :clientId")
     fun observeTotalRemaining(clientId: Long): Flow<Double>
+
+    @Query("SELECT COALESCE(SUM(remainingBalance), 0) FROM debts WHERE clientId = :clientId AND remainingBalance > 0")
+    suspend fun getTotalRemaining(clientId: Long): Double
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(debt: DebtEntity): Long

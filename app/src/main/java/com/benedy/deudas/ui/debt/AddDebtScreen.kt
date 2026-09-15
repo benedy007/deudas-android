@@ -3,6 +3,7 @@ package com.benedy.deudas.ui.debt
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,8 +14,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,10 +27,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -33,6 +43,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benedy.deudas.R
 import com.benedy.deudas.ui.util.formatMoney
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,9 +56,37 @@ fun AddDebtScreen(
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val products by viewModel.products.collectAsStateWithLifecycle()
+    var showDatePicker by remember { mutableStateOf(false) }
+    val dateFmt = remember { SimpleDateFormat("dd/MM/yyyy", Locale("es", "DO")) }
 
     LaunchedEffect(ui.saved) {
         if (ui.saved) onSaved()
+    }
+
+    if (showDatePicker) {
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = ui.fechaEntrega ?: System.currentTimeMillis()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pickerState.selectedDateMillis?.let { viewModel.onFechaEntrega(it) }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text(stringResource(R.string.save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        ) {
+            DatePicker(state = pickerState)
+        }
     }
 
     Scaffold(
@@ -106,6 +147,31 @@ fun AddDebtScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
             )
+
+            val fechaText = ui.fechaEntrega?.let { dateFmt.format(Date(it)) }.orEmpty()
+            OutlinedTextField(
+                value = fechaText,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text(stringResource(R.string.fecha_entrega)) },
+                placeholder = { Text(stringResource(R.string.fecha_entrega_optional)) },
+                trailingIcon = {
+                    Row {
+                        if (ui.fechaEntrega != null) {
+                            IconButton(onClick = viewModel::clearFechaEntrega) {
+                                Icon(Icons.Outlined.Clear, contentDescription = stringResource(R.string.clear_date))
+                            }
+                        }
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(Icons.Outlined.CalendarMonth, contentDescription = stringResource(R.string.fecha_entrega))
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true }
+            )
+
             when (ui.error) {
                 "required" -> Text(stringResource(R.string.field_required), color = MaterialTheme.colorScheme.error)
                 "amount" -> Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)

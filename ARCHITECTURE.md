@@ -1,6 +1,6 @@
 # Arquitectura — Deudas (Android)
 
-## V1.2 (actual)
+## V1.3 (actual)
 
 ```
 ui/
@@ -18,7 +18,7 @@ ui/
 data/
   auth/          AuthRepository + UserSession (Credential Manager)
   backup/        DriveAuthHelper + DriveBackupRepository + BackupPayload
-  local/         Room (entities, daos, DeudasDatabase + MIGRATION_1_2)
+  local/         Room (entities, daos, DeudasDatabase + MIGRATION_1_2 + MIGRATION_2_3)
   repository/    DebtCrmRepository (export/import backup)
 ```
 

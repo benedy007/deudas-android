@@ -8,13 +8,19 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+data class ReceiptAllocationLine(
+    val debtDescription: String,
+    val amount: Double
+)
+
 data class ReceiptData(
     val clientName: String,
     val clientPhone: String,
     val amount: Double,
     val debtDescription: String,
     val dateMs: Long,
-    val remaining: Double
+    val remaining: Double,
+    val allocations: List<ReceiptAllocationLine> = emptyList()
 )
 
 class ReceiptViewModel(
@@ -26,17 +32,36 @@ class ReceiptViewModel(
 
     init {
         viewModelScope.launch {
-            val payment = repo.getPayment(paymentId) ?: return@launch
-            val debt = repo.getDebt(payment.debtId) ?: return@launch
-            val client = repo.getClient(payment.clientId) ?: return@launch
+            val payments = repo.getPaymentGroup(paymentId)
+            if (payments.isEmpty()) return@launch
+            val client = repo.getClient(payments.first().clientId) ?: return@launch
+            val lines = payments.mapNotNull { p ->
+                val debt = repo.getDebt(p.debtId) ?: return@mapNotNull null
+                ReceiptAllocationLine(
+                    debtDescription = debt.description,
+                    amount = p.amount
+                )
+            }
+            val totalPaid = payments.sumOf { it.amount }
+            val clientRemaining = repo.getTotalRemaining(client.id)
+            val concept = if (lines.size <= 1) {
+                lines.firstOrNull()?.debtDescription ?: "—"
+            } else {
+                lines.joinToString(" · ") { "${it.debtDescription} (${formatCompact(it.amount)})" }
+            }
             _data.value = ReceiptData(
                 clientName = client.name,
                 clientPhone = client.phone,
-                amount = payment.amount,
-                debtDescription = debt.description,
-                dateMs = payment.createdAt,
-                remaining = debt.remainingBalance
+                amount = totalPaid,
+                debtDescription = concept,
+                dateMs = payments.first().createdAt,
+                remaining = clientRemaining,
+                allocations = lines
             )
         }
+    }
+
+    private fun formatCompact(v: Double): String {
+        return if (v == v.toLong().toDouble()) v.toLong().toString() else "%.2f".format(v)
     }
 }

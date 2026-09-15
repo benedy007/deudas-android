@@ -1,5 +1,6 @@
 package com.benedy.deudas.ui.receipt
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -89,15 +90,29 @@ fun ReceiptScreen(
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(r.clientName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     Text(
-                        stringResource(R.string.receipt_concept) + ": " + r.debtDescription,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
                         stringResource(R.string.receipt_paid) + ": " + formatMoney(r.amount),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
                     )
+                    if (r.allocations.size > 1) {
+                        Text(
+                            stringResource(R.string.receipt_applied_to),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        r.allocations.forEach { line ->
+                            Text(
+                                "• ${line.debtDescription}: ${formatMoney(line.amount)}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    } else {
+                        Text(
+                            stringResource(R.string.receipt_concept) + ": " + r.debtDescription,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                     Text(
                         stringResource(R.string.receipt_remaining) + ": " + formatMoney(r.remaining),
                         style = MaterialTheme.typography.bodyLarge
@@ -153,27 +168,35 @@ fun ReceiptScreen(
                     Button(
                         onClick = {
                             showShareChooser = false
-                            val uri = ReceiptImageRenderer.renderToCacheFile(
-                                context = context,
-                                clientName = r.clientName,
-                                amount = r.amount,
-                                debtDescription = r.debtDescription,
-                                dateMs = r.dateMs,
-                                remaining = r.remaining
-                            )
-                            val caption = WhatsAppHelper.buildReceiptText(
-                                clientName = r.clientName,
-                                amount = r.amount,
-                                debtDescription = r.debtDescription,
-                                dateMs = r.dateMs,
-                                remaining = r.remaining
-                            )
-                            WhatsAppHelper.shareImageToWhatsApp(
-                                context = context,
-                                phone = r.clientPhone,
-                                imageUri = uri,
-                                caption = caption
-                            )
+                            try {
+                                val uri = ReceiptImageRenderer.renderToCacheFile(
+                                    context = context,
+                                    clientName = r.clientName,
+                                    amount = r.amount,
+                                    debtDescription = r.debtDescription,
+                                    dateMs = r.dateMs,
+                                    remaining = r.remaining
+                                )
+                                val caption = WhatsAppHelper.buildReceiptText(
+                                    clientName = r.clientName,
+                                    amount = r.amount,
+                                    debtDescription = r.debtDescription,
+                                    dateMs = r.dateMs,
+                                    remaining = r.remaining
+                                )
+                                WhatsAppHelper.shareImageToWhatsApp(
+                                    context = context,
+                                    phone = r.clientPhone,
+                                    imageUri = uri,
+                                    caption = caption
+                                )
+                            } catch (e: Exception) {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.share_receipt_failed),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {

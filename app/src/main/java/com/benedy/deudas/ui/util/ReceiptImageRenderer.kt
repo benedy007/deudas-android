@@ -35,9 +35,16 @@ object ReceiptImageRenderer {
         val dir = File(context.cacheDir, "receipts").apply { mkdirs() }
         val file = File(dir, "recibo_${System.currentTimeMillis()}.png")
         FileOutputStream(file).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)) {
+                throw IllegalStateException("No se pudo generar la imagen del recibo")
+            }
+            out.flush()
+            out.fd.sync()
         }
         bitmap.recycle()
+        if (!file.exists() || file.length() == 0L) {
+            throw IllegalStateException("Archivo de recibo vacío")
+        }
         return FileProvider.getUriForFile(
             context,
             "${context.packageName}.fileprovider",

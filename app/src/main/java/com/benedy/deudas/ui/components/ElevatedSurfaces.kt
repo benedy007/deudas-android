@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -59,7 +60,14 @@ fun ElevatedActionCard(
     description: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    elevation: Dp = 10.dp
+    elevation: Dp = 10.dp,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+    iconGradient: List<Color> = listOf(
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.95f),
+        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f)
+    ),
+    iconTint: Color = MaterialTheme.colorScheme.onPrimary
 ) {
     Card(
         onClick = onClick,
@@ -72,7 +80,7 @@ fun ElevatedActionCard(
             hoveredElevation = 14.dp
         ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = containerColor
         )
     ) {
         Row(
@@ -85,21 +93,14 @@ fun ElevatedActionCard(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.95f),
-                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f)
-                            )
-                        )
-                    ),
+                    .background(Brush.linearGradient(iconGradient)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary
+                    tint = iconTint
                 )
             }
             Spacer(modifier = Modifier.width(18.dp))
@@ -108,13 +109,13 @@ fun ElevatedActionCard(
                     text = title,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = contentColor
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.82f)
+                    color = contentColor.copy(alpha = 0.82f)
                 )
             }
         }

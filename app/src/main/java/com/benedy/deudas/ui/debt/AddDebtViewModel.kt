@@ -16,6 +16,8 @@ data class AddDebtUiState(
     val description: String = "",
     val amount: String = "",
     val selectedProductId: Long? = null,
+    /** Optional delivery/due date as epoch millis. */
+    val fechaEntrega: Long? = null,
     val error: String? = null,
     val saved: Boolean = false,
     val saving: Boolean = false
@@ -36,6 +38,10 @@ class AddDebtViewModel(
     }
 
     fun onAmount(v: String) = _ui.update { it.copy(amount = v, error = null) }
+
+    fun onFechaEntrega(millis: Long?) = _ui.update { it.copy(fechaEntrega = millis) }
+
+    fun clearFechaEntrega() = _ui.update { it.copy(fechaEntrega = null) }
 
     fun selectProduct(product: ProductEntity) {
         _ui.update {
@@ -59,7 +65,7 @@ class AddDebtViewModel(
         }
         viewModelScope.launch {
             _ui.update { it.copy(saving = true) }
-            repo.addDebt(clientId, s.description, amount)
+            repo.addDebt(clientId, s.description, amount, s.fechaEntrega)
             _ui.update { it.copy(saving = false, saved = true) }
         }
     }

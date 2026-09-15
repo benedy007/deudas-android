@@ -23,5 +23,7 @@ data class DebtEntity(
     val description: String,
     val originalAmount: Double,
     val remainingBalance: Double,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    /** Optional delivery / due date (epoch millis). */
+    val fechaEntrega: Long? = null
 )

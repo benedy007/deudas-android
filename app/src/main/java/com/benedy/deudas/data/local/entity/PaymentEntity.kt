@@ -15,7 +15,7 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("debtId"), Index("clientId")]
+    indices = [Index("debtId"), Index("clientId"), Index("groupId")]
 )
 data class PaymentEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -23,5 +23,10 @@ data class PaymentEntity(
     val clientId: Long,
     val amount: Double,
     val note: String? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    /**
+     * Shared id for waterfall allocations that belong to one receipt.
+     * Null / self for legacy single-debt payments.
+     */
+    val groupId: Long? = null
 )

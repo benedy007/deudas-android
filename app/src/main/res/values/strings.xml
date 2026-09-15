@@ -8,7 +8,7 @@
     <string name="test_mode_hint">Modo prueba · datos solo en este dispositivo</string>
     <string name="google_sign_in">Conectar con Google</string>
     <string name="google_sign_in_hint">Usa tu cuenta de Google para iniciar sesión</string>
-    <string name="login_footer">V1.2 · Datos locales + respaldo opcional en Google Drive.</string>
+    <string name="login_footer">V1.3 · Datos locales + respaldo opcional en Google Drive.</string>
 
     <!-- Sesión -->
     <string name="guest_display_name">Invitado</string>
@@ -44,6 +44,22 @@
     <!-- Clientes -->
     <string name="clients_title">Clientes</string>
     <string name="clients_empty">Aún no hay clientes.\nUsa «Agregar cliente» para crear el primero.</string>
+
+    <string name="clients_search_hint">Buscar por nombre</string>
+    <string name="clients_search_empty">No hay clientes que coincidan con la búsqueda.</string>
+    <string name="clear_search">Limpiar búsqueda</string>
+    <string name="clients_sort">Ordenar</string>
+    <string name="sort_by_debt">Por deuda (mayor → menor)</string>
+    <string name="sort_by_name">Por nombre (A → Z)</string>
+    <string name="sort_by_fecha_entrega">Por fecha de entrega</string>
+    <string name="sort_chip_debt">Deuda</string>
+    <string name="sort_chip_name">Nombre</string>
+    <string name="sort_chip_fecha">Entrega</string>
+    <string name="fecha_entrega">Fecha de entrega</string>
+    <string name="fecha_entrega_optional">Opcional</string>
+    <string name="fecha_entrega_label">Entrega: %1$s</string>
+    <string name="clear_date">Quitar fecha</string>
+    <string name="badge_recent_payment">Abono reciente</string>
     <string name="add_client_title">Agregar cliente</string>
     <string name="edit_client_title">Editar cliente</string>
     <string name="client_name">Nombre</string>
@@ -76,6 +92,16 @@
     <string name="original_label">Original: %1$s</string>
     <string name="add_debt">Agregar deuda</string>
     <string name="register_payment">Registrar pago</string>
+
+    <string name="payment_waterfall_hint">Se aplica a la deuda total; primero la más antigua</string>
+    <string name="payment_applies_to_total">El abono se reparte entre las deudas abiertas, empezando por la más antigua.</string>
+    <string name="open_debts_oldest_first">Deudas abiertas (más antigua primero)</string>
+    <string name="payment_oldest_badge">Se paga primero</string>
+    <string name="pay_full_total">Pagar el total adeudado</string>
+    <string name="payment_failed">No se pudo registrar el pago</string>
+    <string name="payment_over_total">El monto no puede ser mayor que la deuda actual</string>
+    <string name="share_receipt_failed">No se pudo compartir el comprobante. Prueba enviar como texto.</string>
+    <string name="receipt_applied_to">Aplicado a</string>
     <string name="debt_description">Descripción</string>
     <string name="debt_amount">Monto</string>
     <string name="payment_amount">Monto pagado</string>

@@ -9,7 +9,7 @@ import org.json.JSONObject
 
 /**
  * Snapshot of all Room CRM tables for Drive backup/restore.
- * Format version 1 — includes client address fields from DB v2.
+ * Format version 1 — includes client address fields + optional debt fechaEntrega.
  */
 data class BackupPayload(
     val formatVersion: Int = FORMAT_VERSION,
@@ -48,6 +48,7 @@ data class BackupPayload(
                         .put("originalAmount", d.originalAmount)
                         .put("remainingBalance", d.remainingBalance)
                         .put("createdAt", d.createdAt)
+                        .put("fechaEntrega", d.fechaEntrega ?: JSONObject.NULL)
                 )
             }
         })
@@ -61,6 +62,7 @@ data class BackupPayload(
                         .put("amount", p.amount)
                         .put("note", p.note)
                         .put("createdAt", p.createdAt)
+                        .put("groupId", p.groupId ?: JSONObject.NULL)
                 )
             }
         })
@@ -117,7 +119,8 @@ data class BackupPayload(
                             description = o.getString("description"),
                             originalAmount = o.getDouble("originalAmount"),
                             remainingBalance = o.getDouble("remainingBalance"),
-                            createdAt = o.optLong("createdAt", System.currentTimeMillis())
+                            createdAt = o.optLong("createdAt", System.currentTimeMillis()),
+                            fechaEntrega = o.nullableLong("fechaEntrega")
                         )
                     )
                 }
@@ -132,7 +135,8 @@ data class BackupPayload(
                             clientId = o.getLong("clientId"),
                             amount = o.getDouble("amount"),
                             note = o.nullableString("note"),
-                            createdAt = o.optLong("createdAt", System.currentTimeMillis())
+                            createdAt = o.optLong("createdAt", System.currentTimeMillis()),
+                            groupId = o.nullableLong("groupId")
                         )
                     )
                 }
@@ -166,6 +170,11 @@ data class BackupPayload(
             if (!has(key) || isNull(key)) return null
             val v = getString(key)
             return v.ifBlank { null }
+        }
+
+        private fun JSONObject.nullableLong(key: String): Long? {
+            if (!has(key) || isNull(key)) return null
+            return getLong(key)
         }
     }
 }

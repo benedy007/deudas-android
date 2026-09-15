@@ -22,7 +22,7 @@ import com.benedy.deudas.data.local.entity.ProductEntity
         PaymentEntity::class,
         ProductEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class DeudasDatabase : RoomDatabase() {
@@ -48,6 +48,17 @@ abstract class DeudasDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v2 → v3: optional delivery/due date on debts + payment groupId
+         * for waterfall / multi-debt receipts.
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE debts ADD COLUMN fechaEntrega INTEGER")
+                db.execSQL("ALTER TABLE payments ADD COLUMN groupId INTEGER")
+            }
+        }
+
         fun getInstance(context: Context): DeudasDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -55,7 +66,7 @@ abstract class DeudasDatabase : RoomDatabase() {
                     DeudasDatabase::class.java,
                     "deudas.db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { INSTANCE = it }
             }
