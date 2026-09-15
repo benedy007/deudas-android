@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
 
 /**
- * Repositorio de autenticación con Google Identity / Credential Manager.
+ * Repositorio de autenticación: modo invitado (principal V1) + Google Identity.
  * Sin Firebase. La sesión se guarda localmente para el auth gate de la app.
  *
  * Futuro: el mismo usuario Google servirá para Google Drive (OAuth scopes).
@@ -38,6 +38,22 @@ class AuthRepository(appContext: Context) {
 
     val isSignedIn: Boolean
         get() = _session.value != null
+
+    /**
+     * Entrada principal V1: sesión de invitado / modo prueba, sin Google ni WEB_CLIENT_ID.
+     */
+    fun signInAsGuest(): UserSession {
+        val session = UserSession(
+            idToken = GUEST_TOKEN,
+            displayName = "Invitado",
+            email = null,
+            photoUrl = null,
+            isGuest = true
+        )
+        saveSession(session)
+        _session.value = session
+        return session
+    }
 
     /**
      * @param activityContext debe ser una Activity (Credential Manager muestra UI).
@@ -84,7 +100,8 @@ class AuthRepository(appContext: Context) {
                         idToken = googleId.idToken,
                         displayName = googleId.displayName,
                         email = googleId.id,
-                        photoUrl = googleId.profilePictureUri?.toString()
+                        photoUrl = googleId.profilePictureUri?.toString(),
+                        isGuest = false
                     )
                     saveSession(session)
                     _session.value = session
@@ -98,10 +115,13 @@ class AuthRepository(appContext: Context) {
     }
 
     suspend fun signOut() {
-        try {
-            credentialManager.clearCredentialState(ClearCredentialStateRequest())
-        } catch (_: Exception) {
-            // Continuar con limpieza local aunque falle el clear remoto
+        val wasGuest = _session.value?.isGuest == true
+        if (!wasGuest) {
+            try {
+                credentialManager.clearCredentialState(ClearCredentialStateRequest())
+            } catch (_: Exception) {
+                // Continuar con limpieza local aunque falle el clear remoto
+            }
         }
         clearSession()
         _session.value = null
@@ -113,16 +133,19 @@ class AuthRepository(appContext: Context) {
             .putString(KEY_DISPLAY_NAME, session.displayName)
             .putString(KEY_EMAIL, session.email)
             .putString(KEY_PHOTO_URL, session.photoUrl)
+            .putBoolean(KEY_IS_GUEST, session.isGuest)
             .apply()
     }
 
     private fun loadSession(): UserSession? {
         val token = prefs.getString(KEY_ID_TOKEN, null) ?: return null
+        val isGuest = prefs.getBoolean(KEY_IS_GUEST, token == GUEST_TOKEN)
         return UserSession(
             idToken = token,
             displayName = prefs.getString(KEY_DISPLAY_NAME, null),
             email = prefs.getString(KEY_EMAIL, null),
-            photoUrl = prefs.getString(KEY_PHOTO_URL, null)
+            photoUrl = prefs.getString(KEY_PHOTO_URL, null),
+            isGuest = isGuest
         )
     }
 
@@ -136,6 +159,8 @@ class AuthRepository(appContext: Context) {
         private const val KEY_DISPLAY_NAME = "display_name"
         private const val KEY_EMAIL = "email"
         private const val KEY_PHOTO_URL = "photo_url"
+        private const val KEY_IS_GUEST = "is_guest"
+        const val GUEST_TOKEN = "guest"
     }
 }
 

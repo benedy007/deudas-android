@@ -1,4 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Deudas</string>
+
+    <!-- Login -->
+    <string name="login_subtitle">Gestiona clientes y deudas de forma sencilla.\nEntra en modo prueba para explorar la app.</string>
+    <string name="continue_without_account">Continuar sin cuenta</string>
+    <string name="test_mode_hint">Modo prueba · sin inicio de sesión</string>
+    <string name="google_sign_in_later">Continuar con Google</string>
+    <string name="google_coming_later">Inicio con Google · próximamente</string>
+    <string name="login_footer">V1 · Modo prueba activo.\nClientes, deudas y respaldo Drive llegarán pronto.</string>
+
+    <!-- Home / sesión -->
+    <string name="guest_display_name">Invitado</string>
+    <string name="test_mode_label">Modo prueba</string>
+    <string name="user_fallback">Usuario</string>
+    <string name="profile_photo">Foto de perfil</string>
+    <string name="exit_guest">Salir</string>
+    <string name="sign_out">Cerrar sesión</string>
+
+    <string name="guest_info_title">Modo prueba</string>
+    <string name="guest_info_body">Estás usando la app como invitado. Puedes explorar la interfaz; las funciones de clientes y deudas llegarán en las próximas versiones. Usa Salir para volver al inicio.</string>
+    <string name="coming_soon_title">Próximamente</string>
+    <string name="coming_soon_body">Las funciones de clientes, deudas y WhatsApp estarán disponibles en las próximas versiones. Esta pantalla confirma que el inicio de sesión con Google funciona correctamente.</string>
+
+    <string name="backup_title">Respaldo</string>
+    <string name="backup_body">Los datos se respaldarán en tu Google Drive (no Firebase). Podrás restaurarlos en otro dispositivo con la misma cuenta.</string>
+    <string name="backup_button">Respaldo Google Drive (próximamente)</string>
 </resources>

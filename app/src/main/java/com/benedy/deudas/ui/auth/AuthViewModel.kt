@@ -38,6 +38,19 @@ class AuthViewModel(
         }
     }
 
+    /** Modo prueba / invitado — ruta principal V1, sin Google. */
+    fun continueAsGuest() {
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        authRepository.signInAsGuest()
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                isSignedIn = true,
+                errorMessage = null
+            )
+        }
+    }
+
     fun signInWithGoogle(activityContext: Context) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }

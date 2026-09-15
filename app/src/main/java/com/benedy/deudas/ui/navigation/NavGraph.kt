@@ -18,7 +18,7 @@ object Routes {
 }
 
 /**
- * Navegación con auth gate: si hay sesión → Home; si no → Login.
+ * Navegación con auth gate: si hay sesión (Google o invitado) → Home; si no → Login.
  */
 @Composable
 fun DeudasNavGraph(authViewModel: AuthViewModel) {
@@ -35,6 +35,7 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
         composable(Routes.LOGIN) {
             LoginScreen(
                 uiState = uiState,
+                onContinueAsGuest = { authViewModel.continueAsGuest() },
                 onGoogleSignIn = { authViewModel.signInWithGoogle(context) },
                 onClearError = { authViewModel.clearError() }
             )

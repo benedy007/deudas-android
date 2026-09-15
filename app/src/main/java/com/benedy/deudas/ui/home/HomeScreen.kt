@@ -36,9 +36,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.benedy.deudas.R
 import com.benedy.deudas.data.auth.UserSession
 import com.benedy.deudas.ui.auth.AuthUiState
 
@@ -49,11 +51,12 @@ fun HomeScreen(
     onLogout: () -> Unit
 ) {
     val session = uiState.session
+    val isGuest = session?.isGuest == true
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Deudas") },
+                title = { Text(stringResource(R.string.app_name)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -78,7 +81,13 @@ fun HomeScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Cerrar sesión")
+                            Text(
+                                if (isGuest) {
+                                    stringResource(R.string.exit_guest)
+                                } else {
+                                    stringResource(R.string.sign_out)
+                                }
+                            )
                         }
                     }
                 }
@@ -97,7 +106,7 @@ fun HomeScreen(
                 ProfileCard(session = session)
             }
 
-            InfoCard()
+            InfoCard(isGuest = isGuest)
 
             DriveStubCard()
         }
@@ -121,7 +130,7 @@ private fun ProfileCard(session: UserSession) {
             if (!session.photoUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = session.photoUrl,
-                    contentDescription = "Foto de perfil",
+                    contentDescription = stringResource(R.string.profile_photo),
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape),
@@ -138,13 +147,25 @@ private fun ProfileCard(session: UserSession) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = session.displayName ?: "Usuario",
+                    text = if (session.isGuest) {
+                        stringResource(R.string.guest_display_name)
+                    } else {
+                        session.displayName ?: stringResource(R.string.user_fallback)
+                    },
                     style = MaterialTheme.typography.titleLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (!session.email.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
+                if (session.isGuest) {
+                    Text(
+                        text = stringResource(R.string.test_mode_label),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else if (!session.email.isNullOrBlank()) {
                     Text(
                         text = session.email,
                         style = MaterialTheme.typography.bodyMedium,
@@ -159,7 +180,7 @@ private fun ProfileCard(session: UserSession) {
 }
 
 @Composable
-private fun InfoCard() {
+private fun InfoCard(isGuest: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -180,13 +201,21 @@ private fun InfoCard() {
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = "Próximamente",
+                    text = if (isGuest) {
+                        stringResource(R.string.guest_info_title)
+                    } else {
+                        stringResource(R.string.coming_soon_title)
+                    },
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Las funciones de clientes, deudas y WhatsApp estarán disponibles en las próximas versiones. Esta pantalla confirma que el inicio de sesión con Google funciona correctamente.",
+                    text = if (isGuest) {
+                        stringResource(R.string.guest_info_body)
+                    } else {
+                        stringResource(R.string.coming_soon_body)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
@@ -211,13 +240,13 @@ private fun DriveStubCard() {
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Respaldo",
+                    text = stringResource(R.string.backup_title),
                     style = MaterialTheme.typography.titleMedium
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Los datos se respaldarán en tu Google Drive (no Firebase). Podrás restaurarlos en otro dispositivo con la misma cuenta.",
+                text = stringResource(R.string.backup_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -233,7 +262,7 @@ private fun DriveStubCard() {
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Respaldo Google Drive (próximamente)")
+                Text(stringResource(R.string.backup_button))
             }
         }
     }
