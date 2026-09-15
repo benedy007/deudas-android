@@ -8,9 +8,9 @@
     <string name="test_mode_hint">Modo prueba · sin inicio de sesión</string>
     <string name="google_sign_in_later">Continuar con Google</string>
     <string name="google_coming_later">Inicio con Google · próximamente</string>
-    <string name="login_footer">V1 · Modo prueba activo.\nClientes, deudas y respaldo Drive llegarán pronto.</string>
+    <string name="login_footer">V1.1 · Modo prueba con datos locales.\nRespaldo Google Drive llegará pronto.</string>
 
-    <!-- Home / sesión -->
+    <!-- Sesión -->
     <string name="guest_display_name">Invitado</string>
     <string name="test_mode_label">Modo prueba</string>
     <string name="user_fallback">Usuario</string>
@@ -18,12 +18,73 @@
     <string name="exit_guest">Salir</string>
     <string name="sign_out">Cerrar sesión</string>
 
-    <string name="guest_info_title">Modo prueba</string>
-    <string name="guest_info_body">Estás usando la app como invitado. Puedes explorar la interfaz; las funciones de clientes y deudas llegarán en las próximas versiones. Usa Salir para volver al inicio.</string>
-    <string name="coming_soon_title">Próximamente</string>
-    <string name="coming_soon_body">Las funciones de clientes, deudas y WhatsApp estarán disponibles en las próximas versiones. Esta pantalla confirma que el inicio de sesión con Google funciona correctamente.</string>
+    <!-- Hub -->
+    <string name="hub_title">¿Qué deseas hacer?</string>
+    <string name="hub_subtitle_guest">Modo prueba · datos solo en este dispositivo</string>
+    <string name="action_add_client">Agregar cliente</string>
+    <string name="action_add_client_desc">Crear perfil con nombre y WhatsApp</string>
+    <string name="action_charge">Cobrar</string>
+    <string name="action_charge_desc">Elige un cliente y registra el cobro</string>
+    <string name="action_add_product">Agregar producto</string>
+    <string name="action_add_product_desc">Catálogo para usar al cobrar</string>
+    <string name="action_view_clients">Ver clientes</string>
+    <string name="action_view_clients_desc">Lista y detalle de clientes</string>
+    <string name="action_view_products">Ver productos</string>
+    <string name="action_view_products_desc">Catálogo de productos</string>
+    <string name="drive_note">Respaldo en Google Drive: próximamente</string>
 
-    <string name="backup_title">Respaldo</string>
-    <string name="backup_body">Los datos se respaldarán en tu Google Drive (no Firebase). Podrás restaurarlos en otro dispositivo con la misma cuenta.</string>
-    <string name="backup_button">Respaldo Google Drive (próximamente)</string>
+    <!-- Clientes -->
+    <string name="clients_title">Clientes</string>
+    <string name="clients_empty">Aún no hay clientes.\nUsa «Agregar cliente» para crear el primero.</string>
+    <string name="add_client_title">Agregar cliente</string>
+    <string name="edit_client_title">Editar cliente</string>
+    <string name="client_name">Nombre</string>
+    <string name="client_phone">Teléfono WhatsApp</string>
+    <string name="client_phone_hint">Ej. 18095551234</string>
+    <string name="client_notes">Notas (opcional)</string>
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="open_whatsapp">Abrir WhatsApp</string>
+    <string name="select_client_title">Seleccionar cliente</string>
+    <string name="select_client_for_charge">¿A quién vas a cobrar?</string>
+    <string name="no_clients_for_charge">No hay clientes. Agrega uno primero.</string>
+
+    <!-- Productos -->
+    <string name="products_title">Productos</string>
+    <string name="products_empty">Aún no hay productos.\nAgrega uno para usarlo al cobrar.</string>
+    <string name="add_product_title">Agregar producto</string>
+    <string name="product_name">Nombre del producto</string>
+    <string name="product_price">Precio</string>
+    <string name="product_notes">Notas (opcional)</string>
+
+    <!-- Cobrar / deudas / pagos -->
+    <string name="charge_title">Cobrar</string>
+    <string name="debts_section">Deudas</string>
+    <string name="no_debts">Sin deudas registradas</string>
+    <string name="remaining_label">Saldo: %1$s</string>
+    <string name="original_label">Original: %1$s</string>
+    <string name="add_debt">Agregar deuda</string>
+    <string name="register_payment">Registrar pago</string>
+    <string name="debt_description">Descripción</string>
+    <string name="debt_amount">Monto</string>
+    <string name="payment_amount">Monto pagado</string>
+    <string name="payment_note">Nota (opcional)</string>
+    <string name="choose_debt">Elegir deuda</string>
+    <string name="choose_product">Usar producto del catálogo</string>
+    <string name="or_custom_debt">O crear deuda manual</string>
+    <string name="total_owing">Total adeudado: %1$s</string>
+    <string name="paid_full_hint">Deuda saldada</string>
+    <string name="field_required">Completa los campos requeridos</string>
+    <string name="invalid_amount">Ingresa un monto válido</string>
+
+    <!-- Recibo -->
+    <string name="receipt_title">Comprobante</string>
+    <string name="receipt_paid">Pagado</string>
+    <string name="receipt_remaining">Saldo restante</string>
+    <string name="receipt_concept">Concepto</string>
+    <string name="receipt_date">Fecha</string>
+    <string name="send_whatsapp">Enviar por WhatsApp</string>
+    <string name="done">Listo</string>
+
+    <string name="back">Volver</string>
 </resources>

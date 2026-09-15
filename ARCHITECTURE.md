@@ -1,62 +1,36 @@
 # Arquitectura — Deudas (Android)
 
-## V1 (actual)
+## V1.1 (actual)
 
 ```
 ui/
-  auth/     LoginScreen + AuthViewModel + AuthUiState
-  home/     HomeScreen (perfil + stubs)
-  navigation/  NavGraph con auth gate
-  theme/    Material 3
+  auth/          Login + AuthViewModel
+  home/          Home hub (acciones grandes)
+  clients/       Lista + Agregar cliente
+  clientdetail/  Detalle / Cobrar (deudas + pagos)
+  debt/          Agregar deuda (manual o desde producto)
+  payment/       Registrar pago
+  receipt/       Comprobante + WhatsApp
+  products/      Lista + Agregar producto
+  navigation/    NavGraph con auth gate
+  theme/
 data/
-  auth/     AuthRepository + UserSession (Credential Manager / Google Identity)
+  auth/          AuthRepository + UserSession
+  local/         Room (entities, daos, DeudasDatabase)
+  repository/    DebtCrmRepository
 ```
 
 - **UI:** Jetpack Compose + Material 3 + Navigation Compose
-- **Auth:** Google Sign-In vía Credential Manager (`androidx.credentials` + `googleid`)
-- **Sesión:** SharedPreferences locales (sin Firebase)
-- **Sin backend propio** en V1
-
-## Próximas capas (planificadas)
-
-### Room (clientes / deudas)
-
-```
-data/
-  local/
-    DeudasDatabase.kt
-    dao/ ClientDao, DebtDao
-    entity/ ClientEntity, DebtEntity
-  repository/
-    ClientRepository, DebtRepository
-```
-
-- Base local-first: la app funciona offline
-- Entidades: Cliente, Deuda, (opcional) pagos / notas
-- ViewModels por feature (Clientes, Deudas, Detalle)
-
-### Google Drive (respaldo — NO Firebase)
-
-```
-data/
-  drive/
-    DriveBackupRepository.kt
-    BackupSerializer.kt   // JSON o protobuf del dump Room
-```
-
-- OAuth con la misma cuenta Google (scopes Drive App Data o carpeta dedicada)
-- Exportar / importar snapshot de la BD Room
-- UI: botón real en Home (hoy es stub «próximamente»)
-- Sin Cloud Firestore / Realtime Database / Firebase Auth
-
-### WhatsApp (futuro)
-
-- Intents / deep links para recordar deudas a clientes
-- Sin SDK oficial requerido en el diseño inicial
+- **Home:** hub de acciones — Agregar cliente, Cobrar, Agregar producto, Ver clientes, Ver productos
+- **Cobrar:** siempre empieza eligiendo cliente
+- **Auth:** modo invitado + Google Identity (Credential Manager)
+- **Persistencia:** Room local (offline). Sin Firebase
+- **WhatsApp:** wa.me deep links / share
+- **Drive:** stub («próximamente»)
 
 ## Principios
 
-1. **Sin Firebase** — auth Google Identity + Drive API directa
-2. **Local-first** — Room es la fuente de verdad; Drive es respaldo
-3. **Secrets fuera de Git** — `WEB_CLIENT_ID` solo en `local.properties`
-4. **Un Activity** — toda la UI en Compose Navigation
+1. Sin Firebase — auth Google Identity + Drive API directa (futuro)
+2. Local-first — Room es la fuente de verdad
+3. Secrets fuera de Git — `WEB_CLIENT_ID` solo en `local.properties`
+4. Un Activity — toda la UI en Compose Navigation

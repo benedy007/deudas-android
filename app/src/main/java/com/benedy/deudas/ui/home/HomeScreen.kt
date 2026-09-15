@@ -11,19 +11,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.outlined.CloudUpload
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.AddBusiness
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material.icons.outlined.People
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -34,21 +34,23 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.benedy.deudas.R
-import com.benedy.deudas.data.auth.UserSession
 import com.benedy.deudas.ui.auth.AuthUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     uiState: AuthUiState,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onAddClient: () -> Unit,
+    onCharge: () -> Unit,
+    onAddProduct: () -> Unit,
+    onViewClients: () -> Unit,
+    onViewProducts: () -> Unit
 ) {
     val session = uiState.session
     val isGuest = session?.isGuest == true
@@ -100,25 +102,85 @@ fun HomeScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (session != null) {
-                ProfileCard(session = session)
+            Text(
+                text = if (isGuest) {
+                    stringResource(R.string.guest_display_name) + " · " +
+                        stringResource(R.string.test_mode_label)
+                } else {
+                    session?.displayName ?: stringResource(R.string.user_fallback)
+                },
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = stringResource(R.string.hub_title),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            if (isGuest) {
+                Text(
+                    text = stringResource(R.string.hub_subtitle_guest),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+            Spacer(modifier = Modifier.height(4.dp))
 
-            InfoCard(isGuest = isGuest)
+            HubActionCard(
+                icon = Icons.Outlined.PersonAdd,
+                title = stringResource(R.string.action_add_client),
+                description = stringResource(R.string.action_add_client_desc),
+                onClick = onAddClient
+            )
+            HubActionCard(
+                icon = Icons.Outlined.Payments,
+                title = stringResource(R.string.action_charge),
+                description = stringResource(R.string.action_charge_desc),
+                onClick = onCharge
+            )
+            HubActionCard(
+                icon = Icons.Outlined.AddBusiness,
+                title = stringResource(R.string.action_add_product),
+                description = stringResource(R.string.action_add_product_desc),
+                onClick = onAddProduct
+            )
+            HubActionCard(
+                icon = Icons.Outlined.People,
+                title = stringResource(R.string.action_view_clients),
+                description = stringResource(R.string.action_view_clients_desc),
+                onClick = onViewClients
+            )
+            HubActionCard(
+                icon = Icons.Outlined.Inventory2,
+                title = stringResource(R.string.action_view_products),
+                description = stringResource(R.string.action_view_products_desc),
+                onClick = onViewProducts
+            )
 
-            DriveStubCard()
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.drive_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
 
 @Composable
-private fun ProfileCard(session: UserSession) {
+private fun HubActionCard(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    onClick: () -> Unit
+) {
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
         Row(
@@ -127,142 +189,26 @@ private fun ProfileCard(session: UserSession) {
                 .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (!session.photoUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = session.photoUrl,
-                    contentDescription = stringResource(R.string.profile_photo),
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Outlined.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (session.isGuest) {
-                        stringResource(R.string.guest_display_name)
-                    } else {
-                        session.displayName ?: stringResource(R.string.user_fallback)
-                    },
+                    text = title,
                     style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                if (session.isGuest) {
-                    Text(
-                        text = stringResource(R.string.test_mode_label),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                } else if (!session.email.isNullOrBlank()) {
-                    Text(
-                        text = session.email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun InfoCard(isGuest: Boolean) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Info,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
                 Text(
-                    text = if (isGuest) {
-                        stringResource(R.string.guest_info_title)
-                    } else {
-                        stringResource(R.string.coming_soon_title)
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = if (isGuest) {
-                        stringResource(R.string.guest_info_body)
-                    } else {
-                        stringResource(R.string.coming_soon_body)
-                    },
+                    text = description,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DriveStubCard() {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Outlined.CloudUpload,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = stringResource(R.string.backup_title),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.backup_body),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            FilledTonalButton(
-                onClick = { /* stub — próximamente */ },
-                enabled = false,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.CloudUpload,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.backup_button))
             }
         }
     }
