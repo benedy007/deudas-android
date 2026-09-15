@@ -1,5 +1,6 @@
 package com.benedy.deudas.ui.clients
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benedy.deudas.data.repository.DebtCrmRepository
@@ -41,16 +42,25 @@ class AddClientViewModel(
             return
         }
         viewModelScope.launch {
-            _ui.update { it.copy(saving = true) }
-            val id = repo.addClient(
-                name = s.name,
-                phone = s.phone,
-                notes = s.notes.ifBlank { null },
-                direccionCasa = s.direccionCasa.ifBlank { null },
-                lugarTrabajo = s.lugarTrabajo.ifBlank { null },
-                direccionTrabajo = s.direccionTrabajo.ifBlank { null }
-            )
-            _ui.update { it.copy(saving = false, savedClientId = id) }
+            _ui.update { it.copy(saving = true, error = null) }
+            try {
+                val id = repo.addClient(
+                    name = s.name,
+                    phone = s.phone,
+                    notes = s.notes.ifBlank { null },
+                    direccionCasa = s.direccionCasa.ifBlank { null },
+                    lugarTrabajo = s.lugarTrabajo.ifBlank { null },
+                    direccionTrabajo = s.direccionTrabajo.ifBlank { null }
+                )
+                _ui.update { it.copy(saving = false, savedClientId = id) }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to save client (DB?)", e)
+                _ui.update { it.copy(saving = false, error = "db") }
+            }
         }
+    }
+
+    companion object {
+        private const val TAG = "AddClientVM"
     }
 }

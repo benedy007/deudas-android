@@ -241,7 +241,7 @@ private fun ClientRow(item: ClientListItem, onClick: () -> Unit) {
         SimpleDateFormat("dd/MM/yyyy", Locale("es", "DO"))
     }
     val lines = buildList {
-        add(client.phone)
+        client.phone.takeIf { it.isNotBlank() }?.let { add(it) }
         if (extras.isNotEmpty()) add(extras.joinToString(" · "))
         if (item.totalRemaining > 0) {
             add(stringResource(R.string.remaining_label, formatMoney(item.totalRemaining)))

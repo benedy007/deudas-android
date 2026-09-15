@@ -114,7 +114,10 @@ fun AddClientScreen(
             if (ui.error != null) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.field_required),
+                    text = when (ui.error) {
+                        "db" -> "No se pudo guardar. Revisa el almacenamiento e intenta de nuevo."
+                        else -> stringResource(R.string.field_required)
+                    },
                     color = MaterialTheme.colorScheme.error
                 )
             }

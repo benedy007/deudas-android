@@ -1,5 +1,6 @@
 package com.benedy.deudas.ui.clients
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benedy.deudas.data.local.entity.ClientEntity
@@ -9,6 +10,7 @@ import com.benedy.deudas.data.repository.DebtCrmRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
@@ -39,14 +41,33 @@ class ClientsListViewModel(
     val query: StateFlow<String> = searchQuery
     val sort: StateFlow<ClientSortMode> = sortMode
 
-    val clients: StateFlow<List<ClientListItem>> = combine(
+    /**
+     * Nested combine of at most 3 flows so each transform keeps typed List
+     * parameters. The 5-arg [combine] vararg overload packs values into
+     * Array<*> and causes ClassCastException when casting to List.
+     */
+    private val clientsDebtsPayments = combine(
         repo.observeClients(),
         repo.observeAllDebts(),
-        repo.observeAllPayments(),
+        repo.observeAllPayments()
+    ) { clients, debts, payments ->
+        Triple(clients, debts, payments)
+    }
+
+    val clients: StateFlow<List<ClientListItem>> = combine(
+        clientsDebtsPayments,
         searchQuery,
         sortMode
-    ) { clients, debts, payments, query, sort ->
-        buildClientListItems(clients, debts, payments, query, sort)
+    ) { data, query, sort ->
+        try {
+            buildClientListItems(data.first, data.second, data.third, query, sort)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to build client list items", e)
+            emptyList()
+        }
+    }.catch { e ->
+        Log.e(TAG, "Clients list flow failed", e)
+        emit(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun onSearchQuery(value: String) {
@@ -58,6 +79,7 @@ class ClientsListViewModel(
     }
 
     companion object {
+        private const val TAG = "ClientsListVM"
         private const val ONE_MONTH_MS = 30L * 24 * 60 * 60 * 1000
         private const val FOURTEEN_DAYS_MS = 14L * 24 * 60 * 60 * 1000
 

@@ -35,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.benedy.deudas.BuildConfig
 import com.benedy.deudas.R
 import com.benedy.deudas.ui.components.ElevatedPanel
 import com.benedy.deudas.ui.components.ScreenGradient
@@ -165,6 +166,13 @@ fun LoginScreen(
                 Text(
                     text = stringResource(R.string.login_footer),
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "v${BuildConfig.VERSION_NAME}",
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )

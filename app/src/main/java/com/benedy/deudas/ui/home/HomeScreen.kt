@@ -51,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.benedy.deudas.BuildConfig
 import com.benedy.deudas.R
 import com.benedy.deudas.ui.auth.AuthUiState
 import com.benedy.deudas.ui.backup.BackupViewModel
@@ -364,6 +365,15 @@ fun HomeScreen(
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "v${BuildConfig.VERSION_NAME}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 8.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
             }
         }
     }
