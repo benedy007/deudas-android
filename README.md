@@ -32,6 +32,13 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`
 
 `WEB_CLIENT_ID` se inyecta en `BuildConfig` desde `local.properties` (no se sube a Git).
 
+## Datos y migraciones Room
+
+- **Nunca** usar `fallbackToDestructiveMigration()` en APKs que los usuarios actualizan: borra clientes/deudas al subir la versión de la DB.
+- Los cambios de esquema van con `Migration(from, to)` (p. ej. `MIGRATION_1_2` añade columnas de dirección).
+- Desinstalar/reinstalar sí borra datos locales (esperado). Actualizar el APK in-place (mismo `applicationId` + firma) debe conservarlos.
+- Backup a Google Drive: todavía por venir.
+
 ## Arquitectura
 
 Ver [ARCHITECTURE.md](ARCHITECTURE.md).

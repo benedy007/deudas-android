@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.benedy.deudas.data.local.dao.ClientDao
 import com.benedy.deudas.data.local.dao.DebtDao
 import com.benedy.deudas.data.local.dao.PaymentDao
@@ -33,13 +35,29 @@ abstract class DeudasDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: DeudasDatabase? = null
 
+        /**
+         * v1 → v2: optional address fields on clients.
+         * Never wipe user data on schema bumps — add Migrations instead of
+         * fallbackToDestructiveMigration().
+         */
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE clients ADD COLUMN direccionCasa TEXT")
+                db.execSQL("ALTER TABLE clients ADD COLUMN lugarTrabajo TEXT")
+                db.execSQL("ALTER TABLE clients ADD COLUMN direccionTrabajo TEXT")
+            }
+        }
+
         fun getInstance(context: Context): DeudasDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     DeudasDatabase::class.java,
                     "deudas.db"
-                ).fallbackToDestructiveMigration().build().also { INSTANCE = it }
+                )
+                    .addMigrations(MIGRATION_1_2)
+                    .build()
+                    .also { INSTANCE = it }
             }
         }
     }
