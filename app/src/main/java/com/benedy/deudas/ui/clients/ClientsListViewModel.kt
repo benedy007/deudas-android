@@ -20,6 +20,12 @@ enum class ClientSortMode {
     FECHA_ENTREGA
 }
 
+/**
+ * List row model. UI card color priority (ClientsListScreen):
+ * 1) [hasRecentPayment] → green (al día)
+ * 2) else [isOverdue] → red
+ * 3) else default surface
+ */
 data class ClientListItem(
     val client: ClientEntity,
     val totalRemaining: Double,
@@ -27,7 +33,7 @@ data class ClientListItem(
     val earliestFechaEntrega: Long?,
     /** Open debt older than 1 month (createdAt) or overdue fechaEntrega. */
     val isOverdue: Boolean,
-    /** Payment/abono in the last 14 days. */
+    /** Payment/abono in the last 14 days — wins over [isOverdue] for card color. */
     val hasRecentPayment: Boolean
 )
 

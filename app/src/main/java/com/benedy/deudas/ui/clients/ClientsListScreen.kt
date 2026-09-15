@@ -1,6 +1,5 @@
 package com.benedy.deudas.ui.clients
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,10 +15,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
@@ -33,8 +32,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -47,13 +44,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benedy.deudas.R
@@ -61,12 +57,7 @@ import com.benedy.deudas.ui.components.ClientAvatar
 import com.benedy.deudas.ui.theme.ClientOverdueBg
 import com.benedy.deudas.ui.theme.ClientRecentBg
 import com.benedy.deudas.ui.theme.ClientStatusOnBg
-import com.benedy.deudas.ui.theme.ClientStatusOnBgVariant
 import com.benedy.deudas.ui.util.WhatsAppHelper
-import com.benedy.deudas.ui.util.formatMoney
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -238,130 +229,71 @@ fun ClientsListScreen(
     }
 }
 
+/**
+ * Compact list row: avatar + name + WhatsApp.
+ * Status colors: recent payment (green) wins over overdue (red).
+ */
 @Composable
 private fun ClientRow(item: ClientListItem, onClick: () -> Unit) {
     val client = item.client
     val context = LocalContext.current
-    val extras = listOfNotNull(
-        client.direccionCasa?.takeIf { it.isNotBlank() },
-        client.lugarTrabajo?.takeIf { it.isNotBlank() },
-        client.direccionTrabajo?.takeIf { it.isNotBlank() }
-    )
-    val dateFmt = remember {
-        SimpleDateFormat("dd/MM/yyyy", Locale("es", "DO"))
-    }
 
-    val usesStatusBg = item.isOverdue || item.hasRecentPayment
+    // Priority: recent abono → green (al día); else overdue → red; else default
+    val usesStatusBg = item.hasRecentPayment || item.isOverdue
     val containerColor = when {
-        item.isOverdue -> ClientOverdueBg
         item.hasRecentPayment -> ClientRecentBg
+        item.isOverdue -> ClientOverdueBg
         else -> MaterialTheme.colorScheme.surface
     }
     val contentColor = if (usesStatusBg) ClientStatusOnBg else MaterialTheme.colorScheme.onSurface
-    val supportingColor =
-        if (usesStatusBg) ClientStatusOnBgVariant else MaterialTheme.colorScheme.onSurfaceVariant
     val iconColor = if (usesStatusBg) ClientStatusOnBg else MaterialTheme.colorScheme.onSurfaceVariant
-    val phoneLinkColor = if (usesStatusBg) Color(0xFF0D47A1) else MaterialTheme.colorScheme.primary
+    val waTint = if (usesStatusBg) Color(0xFF1B5E20) else Color(0xFF25D366)
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = containerColor,
             contentColor = contentColor
         )
     ) {
-        ListItem(
-            headlineContent = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        client.name,
-                        fontWeight = FontWeight.SemiBold,
-                        color = contentColor
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ClientAvatar(
+                photoPath = client.photoPath,
+                size = 44.dp,
+                iconTint = iconColor,
+                placeholderBg = if (usesStatusBg) Color.White.copy(alpha = 0.35f)
+                else MaterialTheme.colorScheme.surfaceVariant
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = client.name,
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            if (client.phone.isNotBlank()) {
+                IconButton(
+                    onClick = { WhatsAppHelper.openChat(context, client.phone) },
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.Chat,
+                        contentDescription = stringResource(R.string.open_whatsapp),
+                        tint = waTint
                     )
-                    if (item.isOverdue && item.hasRecentPayment) {
-                        Spacer(Modifier.width(8.dp))
-                        RecentPaymentBadge()
-                    }
                 }
-            },
-            supportingContent = {
-                Column {
-                    if (client.phone.isNotBlank()) {
-                        Text(
-                            text = client.phone,
-                            color = phoneLinkColor,
-                            textDecoration = TextDecoration.Underline,
-                            modifier = Modifier.clickable {
-                                WhatsAppHelper.openChat(context, client.phone)
-                            }
-                        )
-                    }
-                    if (extras.isNotEmpty()) {
-                        Text(extras.joinToString(" · "), color = supportingColor)
-                    }
-                    if (item.totalRemaining > 0) {
-                        Text(
-                            stringResource(R.string.remaining_label, formatMoney(item.totalRemaining)),
-                            color = supportingColor
-                        )
-                    }
-                    item.earliestFechaEntrega?.let { ms ->
-                        Text(
-                            stringResource(R.string.fecha_entrega_label, dateFmt.format(Date(ms))),
-                            color = supportingColor
-                        )
-                    }
-                }
-            },
-            leadingContent = {
-                ClientAvatar(
-                    photoPath = client.photoPath,
-                    size = 44.dp,
-                    iconTint = iconColor,
-                    placeholderBg = if (usesStatusBg) Color.White.copy(alpha = 0.35f)
-                    else MaterialTheme.colorScheme.surfaceVariant
-                )
-            },
-            trailingContent = {
-                when {
-                    item.isOverdue -> StatusDot(Color(0xFFD32F2F))
-                    item.hasRecentPayment -> StatusDot(Color(0xFF2E7D32))
-                }
-            },
-            colors = ListItemDefaults.colors(
-                containerColor = Color.Transparent,
-                headlineColor = contentColor,
-                supportingColor = supportingColor,
-                leadingIconColor = iconColor,
-                trailingIconColor = iconColor
-            ),
-            modifier = Modifier.clickable(onClick = onClick)
-        )
+            }
+        }
     }
-}
-
-@Composable
-private fun RecentPaymentBadge() {
-    Text(
-        text = stringResource(R.string.badge_recent_payment),
-        style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.Bold,
-        color = Color(0xFF1B5E20),
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFC8E6C9))
-            .padding(horizontal = 8.dp, vertical = 2.dp)
-    )
-}
-
-@Composable
-private fun StatusDot(color: Color) {
-    Box(
-        modifier = Modifier
-            .size(12.dp)
-            .clip(CircleShape)
-            .background(color)
-    )
 }

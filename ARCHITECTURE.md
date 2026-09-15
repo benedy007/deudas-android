@@ -1,6 +1,11 @@
 # Arquitectura — Deudas (Android)
 
-## V1.4.1 (actual)
+## V1.4.2 (actual)
+
+- **Lista de clientes compacta:** avatar + nombre + botón WhatsApp (sin direcciones, saldo ni fecha en la fila).
+- **Colores de estado:** abono reciente (≤14 días) → verde (al día), gana sobre mora; si no, deuda vencida → rojo; si no, superficie por defecto.
+
+## V1.4.1
 
 - **Eliminar pagos (LIFO):** solo el último pago (o grupo waterfall) del cliente se puede borrar; más antiguos: botón oculto; si se intenta: «Solo puedes eliminar el último pago de este cliente».
 
