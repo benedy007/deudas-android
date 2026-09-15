@@ -415,7 +415,7 @@ private fun ClientDetailBody(
                 }
             }
         }
-        items(notes, key = { it.id }) { note ->
+        items(notes, key = { "note-${it.id}" }) { note ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     Modifier.padding(12.dp),
@@ -460,7 +460,7 @@ private fun ClientDetailBody(
                 )
             }
         } else {
-            items(debts, key = { it.id }) { debt ->
+            items(debts, key = { "debt-${it.id}" }) { debt ->
                 DebtCard(debt = debt, onPay = { onRegisterPayment(debt.id) })
             }
         }
