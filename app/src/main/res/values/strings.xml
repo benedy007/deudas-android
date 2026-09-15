@@ -88,6 +88,11 @@
     <string name="receipt_concept">Concepto</string>
     <string name="receipt_date">Fecha</string>
     <string name="send_whatsapp">Enviar por WhatsApp</string>
+    <string name="share_receipt_title">¿Cómo quieres enviar el comprobante?</string>
+    <string name="share_receipt_subtitle">Recomendado: imagen para que se vea claro en el chat</string>
+    <string name="share_as_image">Enviar como imagen</string>
+    <string name="share_as_image_hint">Recomendado</string>
+    <string name="share_as_text">Enviar como texto</string>
     <string name="done">Listo</string>
 
     <string name="back">Volver</string>

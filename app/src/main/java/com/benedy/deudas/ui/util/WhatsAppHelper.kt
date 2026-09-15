@@ -1,5 +1,6 @@
 package com.benedy.deudas.ui.util
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -27,7 +28,52 @@ object WhatsAppHelper {
                 putExtra(Intent.EXTRA_TEXT, text)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            context.startActivity(send)
+            try {
+                context.startActivity(send)
+            } catch (_: ActivityNotFoundException) {
+                val chooser = Intent.createChooser(
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, text)
+                    },
+                    null
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(chooser)
+            }
+        }
+    }
+
+    /** Shares a receipt image (PNG via FileProvider). Targets WhatsApp when installed. */
+    fun shareImageToWhatsApp(context: Context, phone: String, imageUri: Uri, caption: String? = null) {
+        val digits = digitsOnly(phone)
+
+        fun buildSend(packageName: String?): Intent =
+            Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, imageUri)
+                if (!caption.isNullOrBlank()) {
+                    putExtra(Intent.EXTRA_TEXT, caption)
+                }
+                if (digits.isNotEmpty()) {
+                    // Undocumented but widely used: open specific WhatsApp chat
+                    putExtra("jid", "$digits@s.whatsapp.net")
+                }
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                if (packageName != null) setPackage(packageName)
+            }
+
+        try {
+            context.startActivity(buildSend("com.whatsapp"))
+        } catch (_: ActivityNotFoundException) {
+            try {
+                context.startActivity(buildSend("com.whatsapp.w4b"))
+            } catch (_: ActivityNotFoundException) {
+                val chooser = Intent.createChooser(buildSend(null), null)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                context.startActivity(chooser)
+            }
         }
     }
 
@@ -47,5 +93,7 @@ object WhatsAppHelper {
         appendLine("Fecha: ${formatDate(dateMs)}")
         appendLine()
         append("Gracias por su pago.")
+        appendLine()
+        append("— Deudas")
     }
 }
