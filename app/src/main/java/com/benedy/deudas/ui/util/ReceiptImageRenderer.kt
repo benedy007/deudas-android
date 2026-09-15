@@ -1,5 +1,6 @@
 package com.benedy.deudas.ui.util
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -7,6 +8,9 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
@@ -17,7 +21,11 @@ object ReceiptImageRenderer {
     private const val PADDING = 64f
     private const val CORNER = 28f
 
-    fun renderToCacheFile(
+    /**
+     * Prefers MediaStore content:// (more reliable with WhatsApp) on Q+.
+     * Falls back to cache FileProvider URI on older APIs or if MediaStore fails.
+     */
+    fun renderForShare(
         context: Context,
         clientName: String,
         amount: Double,
@@ -32,6 +40,81 @@ object ReceiptImageRenderer {
             dateMs = dateMs,
             remaining = remaining
         )
+        try {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                try {
+                    insertIntoMediaStore(context, bitmap)
+                } catch (_: Exception) {
+                    writeToCacheFileProvider(context, bitmap)
+                }
+            } else {
+                writeToCacheFileProvider(context, bitmap)
+            }
+        } finally {
+            if (!bitmap.isRecycled) bitmap.recycle()
+        }
+    }
+
+    /** Legacy name — delegates to [renderForShare]. */
+    fun renderToCacheFile(
+        context: Context,
+        clientName: String,
+        amount: Double,
+        debtDescription: String,
+        dateMs: Long,
+        remaining: Double
+    ): Uri = renderForShare(
+        context, clientName, amount, debtDescription, dateMs, remaining
+    )
+
+    /**
+     * Saves a PNG under Pictures/Deudas via MediaStore and returns content:// URI.
+     * Keeps the bitmap (caller may recycle). Clears IS_PENDING on Q+.
+     */
+    fun insertIntoMediaStore(context: Context, bitmap: Bitmap): Uri {
+        val resolver = context.contentResolver
+        val displayName = "recibo_deudas_${System.currentTimeMillis()}.png"
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(
+                    MediaStore.Images.Media.RELATIVE_PATH,
+                    Environment.DIRECTORY_PICTURES + "/Deudas"
+                )
+                put(MediaStore.Images.Media.IS_PENDING, 1)
+            }
+        }
+        val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        } else {
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        }
+        val uri = resolver.insert(collection, values)
+            ?: throw IllegalStateException("MediaStore no devolvió URI")
+        try {
+            resolver.openOutputStream(uri)?.use { out ->
+                if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)) {
+                    throw IllegalStateException("No se pudo comprimir el PNG")
+                }
+                out.flush()
+            } ?: throw IllegalStateException("No se pudo abrir el stream de MediaStore")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                values.clear()
+                values.put(MediaStore.Images.Media.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+            }
+            return uri
+        } catch (e: Exception) {
+            try {
+                resolver.delete(uri, null, null)
+            } catch (_: Exception) {
+            }
+            throw e
+        }
+    }
+
+    fun writeToCacheFileProvider(context: Context, bitmap: Bitmap): Uri {
         val dir = File(context.cacheDir, "receipts").apply { mkdirs() }
         val file = File(dir, "recibo_${System.currentTimeMillis()}.png")
         FileOutputStream(file).use { out ->
@@ -41,7 +124,6 @@ object ReceiptImageRenderer {
             out.flush()
             out.fd.sync()
         }
-        bitmap.recycle()
         if (!file.exists() || file.length() == 0L) {
             throw IllegalStateException("Archivo de recibo vacío")
         }

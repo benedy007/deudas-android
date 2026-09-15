@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -51,7 +52,8 @@ fun ClientDetailScreen(
     chargeMode: Boolean,
     onBack: () -> Unit,
     onAddDebt: () -> Unit,
-    onRegisterPayment: (debtId: Long?) -> Unit
+    onRegisterPayment: (debtId: Long?) -> Unit,
+    onPaymentHistory: () -> Unit
 ) {
     val client by viewModel.client.collectAsStateWithLifecycle()
     val debts by viewModel.debts.collectAsStateWithLifecycle()
@@ -101,7 +103,8 @@ fun ClientDetailScreen(
                 contentPadding = padding,
                 onOpenWhatsApp = { WhatsAppHelper.openChat(context, current.phone) },
                 onAddDebt = onAddDebt,
-                onRegisterPayment = onRegisterPayment
+                onRegisterPayment = onRegisterPayment,
+                onPaymentHistory = onPaymentHistory
             )
         }
     }
@@ -115,7 +118,8 @@ private fun ClientDetailBody(
     contentPadding: PaddingValues,
     onOpenWhatsApp: () -> Unit,
     onAddDebt: () -> Unit,
-    onRegisterPayment: (Long?) -> Unit
+    onRegisterPayment: (Long?) -> Unit,
+    onPaymentHistory: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -185,6 +189,16 @@ private fun ClientDetailBody(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(stringResource(R.string.register_payment))
                 }
+            }
+        }
+        item {
+            OutlinedButton(
+                onClick = onPaymentHistory,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Outlined.History, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.client_payment_history_title))
             }
         }
         item {

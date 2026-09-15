@@ -18,6 +18,9 @@ interface PaymentDao {
     @Query("SELECT * FROM payments ORDER BY id ASC")
     fun observeAll(): Flow<List<PaymentEntity>>
 
+    @Query("SELECT * FROM payments ORDER BY createdAt DESC, id DESC")
+    fun observeAllNewestFirst(): Flow<List<PaymentEntity>>
+
     @Query("SELECT * FROM payments ORDER BY id ASC")
     suspend fun getAll(): List<PaymentEntity>
 

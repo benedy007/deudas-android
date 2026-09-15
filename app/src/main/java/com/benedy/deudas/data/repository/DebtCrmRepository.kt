@@ -94,6 +94,10 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
 
     // --- Pagos ---
     fun observeAllPayments(): Flow<List<PaymentEntity>> = paymentDao.observeAll()
+    fun observeAllPaymentsNewestFirst(): Flow<List<PaymentEntity>> =
+        paymentDao.observeAllNewestFirst()
+    fun observePaymentsByClient(clientId: Long): Flow<List<PaymentEntity>> =
+        paymentDao.observeByClient(clientId)
     suspend fun getPayment(id: Long): PaymentEntity? = paymentDao.getById(id)
 
     /**

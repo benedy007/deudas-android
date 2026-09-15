@@ -83,3 +83,8 @@ val ClientRecentBg = Color(0xFFC8E6C9)
 /** Near-black text/icons for status cards (readable in light and dark theme) */
 val ClientStatusOnBg = Color(0xFF161D16)
 val ClientStatusOnBgVariant = Color(0xFF404940)
+
+val HubHistoryContainer = Color(0xFFE0F7FA)
+val HubHistoryIconStart = Color(0xFF00838F)
+val HubHistoryIconEnd = Color(0xFF26C6DA)
+val HubHistoryContent = Color(0xFF006064)

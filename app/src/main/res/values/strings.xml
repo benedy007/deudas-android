@@ -32,6 +32,8 @@
     <string name="action_view_clients_desc">Lista y detalle de clientes</string>
     <string name="action_view_products">Ver productos</string>
     <string name="action_view_products_desc">Catálogo de productos</string>
+    <string name="action_payment_history">Historial de pagos</string>
+    <string name="action_payment_history_desc">Ver pagos y reenviar comprobantes</string>
     <string name="backup_section_title">Respaldo</string>
     <string name="backup_to_drive">Respaldar en Google Drive</string>
     <string name="restore_from_drive">Restaurar desde Google Drive</string>
@@ -101,6 +103,9 @@
     <string name="payment_failed">No se pudo registrar el pago</string>
     <string name="payment_over_total">El monto no puede ser mayor que la deuda actual</string>
     <string name="share_receipt_failed">No se pudo compartir el comprobante. Prueba enviar como texto.</string>
+    <string name="share_receipt_failed_detail">No se pudo compartir la imagen: %1$s</string>
+    <string name="share_system_sheet">Compartir (otras apps)</string>
+    <string name="share_system_sheet_hint">Guarda o envía con el menú del sistema</string>
     <string name="receipt_applied_to">Aplicado a</string>
     <string name="debt_description">Descripción</string>
     <string name="debt_amount">Monto</string>
@@ -127,6 +132,12 @@
     <string name="share_as_image_hint">Recomendado</string>
     <string name="share_as_text">Enviar como texto</string>
     <string name="done">Listo</string>
+
+    <string name="payment_history_title">Historial de pagos</string>
+    <string name="client_payment_history_title">Pagos de este cliente</string>
+    <string name="payment_history_empty">Aún no hay pagos registrados.</string>
+    <string name="payment_history_allocations">Aplicado a %1$d deudas</string>
+    <string name="payment_history_resend_hint">Toca para ver y reenviar</string>
 
     <string name="back">Volver</string>
 </resources>

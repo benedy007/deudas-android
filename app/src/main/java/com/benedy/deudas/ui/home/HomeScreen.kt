@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.AddBusiness
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.PersonAdd
@@ -73,6 +74,10 @@ import com.benedy.deudas.ui.theme.HubClientsContainer
 import com.benedy.deudas.ui.theme.HubClientsContent
 import com.benedy.deudas.ui.theme.HubClientsIconEnd
 import com.benedy.deudas.ui.theme.HubClientsIconStart
+import com.benedy.deudas.ui.theme.HubHistoryContainer
+import com.benedy.deudas.ui.theme.HubHistoryContent
+import com.benedy.deudas.ui.theme.HubHistoryIconEnd
+import com.benedy.deudas.ui.theme.HubHistoryIconStart
 import com.benedy.deudas.ui.theme.HubProductsContainer
 import com.benedy.deudas.ui.theme.HubProductsContent
 import com.benedy.deudas.ui.theme.HubProductsIconEnd
@@ -89,7 +94,8 @@ fun HomeScreen(
     onCharge: () -> Unit,
     onAddProduct: () -> Unit,
     onViewClients: () -> Unit,
-    onViewProducts: () -> Unit
+    onViewProducts: () -> Unit,
+    onPaymentHistory: () -> Unit
 ) {
     val session = uiState.session
     val isGuest = session?.isGuest == true
@@ -274,6 +280,17 @@ fun HomeScreen(
                     containerColor = HubAddProductContainer,
                     contentColor = HubAddProductContent,
                     iconGradient = listOf(HubAddProductIconStart, HubAddProductIconEnd),
+                    iconTint = Color.White
+                )
+                ElevatedActionCard(
+                    icon = Icons.Outlined.History,
+                    title = stringResource(R.string.action_payment_history),
+                    description = stringResource(R.string.action_payment_history_desc),
+                    onClick = onPaymentHistory,
+                    elevation = 10.dp,
+                    containerColor = HubHistoryContainer,
+                    contentColor = HubHistoryContent,
+                    iconGradient = listOf(HubHistoryIconStart, HubHistoryIconEnd),
                     iconTint = Color.White
                 )
 

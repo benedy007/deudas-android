@@ -9,16 +9,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.automirrored.outlined.TextSnippet
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Button
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -86,7 +87,12 @@ fun ReceiptScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), elevation = CardDefaults.cardElevation(defaultElevation = 10.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(r.clientName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     Text(
@@ -168,35 +174,11 @@ fun ReceiptScreen(
                     Button(
                         onClick = {
                             showShareChooser = false
-                            try {
-                                val uri = ReceiptImageRenderer.renderToCacheFile(
-                                    context = context,
-                                    clientName = r.clientName,
-                                    amount = r.amount,
-                                    debtDescription = r.debtDescription,
-                                    dateMs = r.dateMs,
-                                    remaining = r.remaining
-                                )
-                                val caption = WhatsAppHelper.buildReceiptText(
-                                    clientName = r.clientName,
-                                    amount = r.amount,
-                                    debtDescription = r.debtDescription,
-                                    dateMs = r.dateMs,
-                                    remaining = r.remaining
-                                )
-                                WhatsAppHelper.shareImageToWhatsApp(
-                                    context = context,
-                                    phone = r.clientPhone,
-                                    imageUri = uri,
-                                    caption = caption
-                                )
-                            } catch (e: Exception) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.share_receipt_failed),
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
+                            shareReceiptImage(
+                                context = context,
+                                data = r,
+                                toWhatsApp = true
+                            )
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -206,6 +188,28 @@ fun ReceiptScreen(
                             Text(stringResource(R.string.share_as_image))
                             Text(
                                 stringResource(R.string.share_as_image_hint),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            showShareChooser = false
+                            shareReceiptImage(
+                                context = context,
+                                data = r,
+                                toWhatsApp = false
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Outlined.Share, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Column(horizontalAlignment = Alignment.Start) {
+                            Text(stringResource(R.string.share_system_sheet))
+                            Text(
+                                stringResource(R.string.share_system_sheet_hint),
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }
@@ -239,5 +243,40 @@ fun ReceiptScreen(
                 }
             }
         }
+    }
+}
+
+private fun shareReceiptImage(
+    context: android.content.Context,
+    data: ReceiptData,
+    toWhatsApp: Boolean
+) {
+    try {
+        val uri = ReceiptImageRenderer.renderForShare(
+            context = context,
+            clientName = data.clientName,
+            amount = data.amount,
+            debtDescription = data.debtDescription,
+            dateMs = data.dateMs,
+            remaining = data.remaining
+        )
+        if (toWhatsApp) {
+            // Image only — no caption EXTRA_TEXT (WhatsApp drops stream otherwise)
+            WhatsAppHelper.shareImageToWhatsApp(
+                context = context,
+                phone = data.clientPhone,
+                imageUri = uri,
+                caption = null
+            )
+        } else {
+            WhatsAppHelper.shareImageSystem(context, uri)
+        }
+    } catch (e: Exception) {
+        val detail = e.message?.takeIf { it.isNotBlank() } ?: e.javaClass.simpleName
+        Toast.makeText(
+            context,
+            context.getString(R.string.share_receipt_failed_detail, detail),
+            Toast.LENGTH_LONG
+        ).show()
     }
 }

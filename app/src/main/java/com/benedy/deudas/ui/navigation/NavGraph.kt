@@ -20,6 +20,7 @@ import com.benedy.deudas.ui.AddProductViewModelFactory
 import com.benedy.deudas.ui.ClientDetailViewModelFactory
 import com.benedy.deudas.ui.ClientsListViewModelFactory
 import com.benedy.deudas.ui.ProductsListViewModelFactory
+import com.benedy.deudas.ui.PaymentHistoryViewModelFactory
 import com.benedy.deudas.ui.ReceiptViewModelFactory
 import com.benedy.deudas.ui.RegisterPaymentViewModelFactory
 import com.benedy.deudas.ui.auth.AuthViewModel
@@ -30,6 +31,8 @@ import com.benedy.deudas.ui.clientdetail.ClientDetailScreen
 import com.benedy.deudas.ui.clients.AddClientScreen
 import com.benedy.deudas.ui.clients.ClientsListScreen
 import com.benedy.deudas.ui.debt.AddDebtScreen
+import com.benedy.deudas.ui.history.PaymentHistoryScreen
+import com.benedy.deudas.ui.history.PaymentHistoryViewModel
 import com.benedy.deudas.ui.home.HomeScreen
 import com.benedy.deudas.ui.payment.RegisterPaymentScreen
 import com.benedy.deudas.ui.products.AddProductScreen
@@ -48,6 +51,8 @@ object Routes {
     const val ADD_DEBT = "client/{clientId}/add_debt"
     const val REGISTER_PAYMENT = "client/{clientId}/pay?debtId={debtId}"
     const val RECEIPT = "receipt/{paymentId}"
+    const val PAYMENT_HISTORY = "payment_history"
+    const val CLIENT_PAYMENT_HISTORY = "client/{clientId}/payments"
 
     fun clientDetail(clientId: Long, charge: Boolean = false) =
         "client/$clientId?charge=$charge"
@@ -58,6 +63,8 @@ object Routes {
         "client/$clientId/pay?debtId=${debtId ?: -1}"
 
     fun receipt(paymentId: Long) = "receipt/$paymentId"
+
+    fun clientPaymentHistory(clientId: Long) = "client/$clientId/payments"
 }
 
 @Composable
@@ -98,7 +105,40 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
                 onCharge = { navController.navigate(Routes.SELECT_CLIENT_CHARGE) },
                 onAddProduct = { navController.navigate(Routes.ADD_PRODUCT) },
                 onViewClients = { navController.navigate(Routes.CLIENTS) },
-                onViewProducts = { navController.navigate(Routes.PRODUCTS) }
+                onViewProducts = { navController.navigate(Routes.PRODUCTS) },
+                onPaymentHistory = { navController.navigate(Routes.PAYMENT_HISTORY) }
+            )
+        }
+
+        composable(Routes.PAYMENT_HISTORY) {
+            val vm = viewModel<PaymentHistoryViewModel>(
+                factory = PaymentHistoryViewModelFactory(crm)
+            )
+            PaymentHistoryScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() },
+                onOpenReceipt = { paymentId ->
+                    navController.navigate(Routes.receipt(paymentId))
+                }
+            )
+        }
+
+        composable(
+            route = Routes.CLIENT_PAYMENT_HISTORY,
+            arguments = listOf(navArgument("clientId") { type = NavType.LongType })
+        ) { entry ->
+            val clientId = entry.arguments!!.getLong("clientId")
+            val vm = viewModel<PaymentHistoryViewModel>(
+                key = "client_payments_$clientId",
+                factory = PaymentHistoryViewModelFactory(crm, clientId)
+            )
+            PaymentHistoryScreen(
+                viewModel = vm,
+                title = stringResource(R.string.client_payment_history_title),
+                onBack = { navController.popBackStack() },
+                onOpenReceipt = { paymentId ->
+                    navController.navigate(Routes.receipt(paymentId))
+                }
             )
         }
 
@@ -169,6 +209,9 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
                 onAddDebt = { navController.navigate(Routes.addDebt(clientId)) },
                 onRegisterPayment = { debtId ->
                     navController.navigate(Routes.registerPayment(clientId, debtId))
+                },
+                onPaymentHistory = {
+                    navController.navigate(Routes.clientPaymentHistory(clientId))
                 }
             )
         }

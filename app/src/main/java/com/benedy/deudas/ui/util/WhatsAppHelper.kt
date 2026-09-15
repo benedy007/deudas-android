@@ -1,5 +1,6 @@
 package com.benedy.deudas.ui.util
 
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
@@ -19,8 +20,8 @@ object WhatsAppHelper {
         } else {
             Uri.parse("https://wa.me/$digits")
         }
-        val intent = Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
+        val intent = Intent(Intent.ACTION_VIEW, uri)
+        startSafely(context, intent)
     }
 
     fun shareTextToWhatsApp(context: Context, phone: String, text: String) {
@@ -30,40 +31,54 @@ object WhatsAppHelper {
             val send = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, text)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             for (pkg in WHATSAPP_PACKAGES) {
                 try {
-                    context.startActivity(Intent(send).setPackage(pkg))
+                    startSafely(context, Intent(send).setPackage(pkg))
                     return
                 } catch (_: Exception) {
                     // try next
                 }
             }
-            val chooser = Intent.createChooser(send, null)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(chooser)
+            startSafely(context, Intent.createChooser(send, null))
         }
     }
 
     /**
-     * Shares a receipt PNG via FileProvider.
-     * Uses ClipData + FLAG_GRANT_READ_URI_PERMISSION (required on Android 7+),
-     * grants URI to WhatsApp packages, and falls back to the system share sheet.
+     * Shares a receipt image. Intentionally does NOT set EXTRA_TEXT —
+     * WhatsApp often drops EXTRA_STREAM when a caption is also present.
+     * Prefers Activity context (no NEW_TASK) when available.
      */
-    fun shareImageToWhatsApp(context: Context, phone: String, imageUri: Uri, caption: String? = null) {
+    fun shareImageToWhatsApp(
+        context: Context,
+        phone: String,
+        imageUri: Uri,
+        @Suppress("UNUSED_PARAMETER") caption: String? = null
+    ) {
+        // phone kept for API compatibility; image share opens WhatsApp picker
+        shareImageOnly(context, imageUri, preferWhatsApp = true)
+    }
+
+    /**
+     * System share sheet for the receipt image (no caption).
+     */
+    fun shareImageSystem(context: Context, imageUri: Uri) {
+        shareImageOnly(context, imageUri, preferWhatsApp = false)
+    }
+
+    private fun shareImageOnly(
+        context: Context,
+        imageUri: Uri,
+        preferWhatsApp: Boolean
+    ) {
         val base = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, imageUri)
+            // Do NOT put EXTRA_TEXT — WhatsApp drops the stream when both are set
             clipData = ClipData.newUri(context.contentResolver, "recibo", imageUri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            if (!caption.isNullOrBlank()) {
-                putExtra(Intent.EXTRA_TEXT, caption)
-            }
         }
 
-        // Explicitly grant read permission to known WhatsApp packages
         for (pkg in WHATSAPP_PACKAGES) {
             try {
                 context.grantUriPermission(
@@ -76,47 +91,62 @@ object WhatsAppHelper {
             }
         }
 
-        // Prefer installed WhatsApp / Business if resolvable
-        for (pkg in WHATSAPP_PACKAGES) {
-            if (!isPackageInstalled(context, pkg)) continue
-            val targeted = Intent(base).setPackage(pkg)
-            try {
-                if (canResolve(context, targeted)) {
-                    context.startActivity(targeted)
-                    return
+        if (preferWhatsApp) {
+            for (pkg in WHATSAPP_PACKAGES) {
+                if (!isPackageInstalled(context, pkg)) continue
+                val targeted = Intent(base).setPackage(pkg)
+                try {
+                    if (canResolve(context, targeted)) {
+                        startSafely(context, targeted)
+                        return
+                    }
+                } catch (_: ActivityNotFoundException) {
+                } catch (_: SecurityException) {
+                } catch (_: Exception) {
                 }
-            } catch (_: ActivityNotFoundException) {
-                // try next / fallback
-            } catch (_: SecurityException) {
-                // try next / fallback
-            } catch (_: Exception) {
-                // try next / fallback
             }
         }
 
-        // System share sheet (ClipData propagates URI grants to chosen app)
         val chooser = Intent.createChooser(Intent(base).setPackage(null), null).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            // Propagate ClipData for permission grants through the chooser
             clipData = base.clipData
-            // Also grant to any EXTRA_INITIAL_INTENTS targets if present
         }
         try {
-            context.startActivity(chooser)
+            startSafely(context, chooser)
         } catch (e: Exception) {
-            // Last resort: image/* mime
             val loose = Intent(base).apply {
                 type = "image/*"
                 setPackage(null)
             }
-            context.startActivity(
-                Intent.createChooser(loose, null)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    .also { it.clipData = ClipData.newUri(context.contentResolver, "recibo", imageUri) }
-            )
+            val looseChooser = Intent.createChooser(loose, null).apply {
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                clipData = ClipData.newUri(context.contentResolver, "recibo", imageUri)
+            }
+            startSafely(context, looseChooser)
         }
+    }
+
+    /**
+     * Starts an intent using Activity context when possible.
+     * Only adds FLAG_ACTIVITY_NEW_TASK when the context is not an Activity.
+     */
+    private fun startSafely(context: Context, intent: Intent) {
+        val activity = context.findActivity()
+        if (activity != null) {
+            activity.startActivity(intent)
+        } else {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        }
+    }
+
+    private fun Context.findActivity(): Activity? {
+        var ctx: Context? = this
+        while (ctx is android.content.ContextWrapper) {
+            if (ctx is Activity) return ctx
+            ctx = ctx.baseContext
+        }
+        return null
     }
 
     private fun isPackageInstalled(context: Context, packageName: String): Boolean {
