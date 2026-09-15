@@ -1,6 +1,6 @@
 # Arquitectura — Deudas (Android)
 
-## V1.3.5 (actual)
+## V1.3.6 (actual)
 
 ```
 ui/
@@ -9,7 +9,7 @@ ui/
   backup/        BackupViewModel (Drive authorize + upload/download)
   clients/       Lista + Agregar cliente
   clientdetail/  Detalle / Cobrar (deudas + pagos)
-  debt/          Agregar deuda (manual o desde producto)
+  debt/          Agregar deuda (manual o desde producto + plan de cuotas opcional)
   payment/       Registrar pago
   receipt/       Comprobante + WhatsApp
   settings/      Ajustes compañía (nombre, teléfono, pie de recibo)
@@ -20,7 +20,7 @@ ui/
 data/
   auth/          AuthRepository + UserSession (Credential Manager)
   backup/        DriveAuthHelper + DriveBackupRepository + BackupPayload
-  local/         Room (entities, daos, DeudasDatabase + MIGRATION_1_2 + MIGRATION_2_3)
+  local/         Room (entities, daos, DeudasDatabase + MIGRATION_1_2 … MIGRATION_4_5)
   repository/    DebtCrmRepository (export/import backup)
 ```
 
@@ -31,6 +31,7 @@ data/
 - **Persistencia:** Room local (offline). Sin Firebase. Sin `fallbackToDestructiveMigration`
 - **WhatsApp:** texto vía wa.me; imagen vía system share sheet (elige WhatsApp)
 - **Pagos:** waterfall sin sobrepago; historial/comprobante permiten eliminar pago (revierte saldo)
+- **Plan de cuotas:** frecuencia + % opcional al crear deuda; etiqueta en detalle; cuota sugerida al pagar (no bloquea)
 - **Ajustes:** DataStore (nombre/teléfono/comentario de compañía en recibos)
 - **UI:** Material 3 con elevación, esquinas grandes, gradientes suaves (ScreenGradient / ElevatedActionCard)
 

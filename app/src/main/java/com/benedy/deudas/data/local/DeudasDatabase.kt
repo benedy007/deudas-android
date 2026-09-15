@@ -22,7 +22,7 @@ import com.benedy.deudas.data.local.entity.ProductEntity
         PaymentEntity::class,
         ProductEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class DeudasDatabase : RoomDatabase() {
@@ -104,6 +104,41 @@ abstract class DeudasDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v4 → v5: optional installment plan on debts
+         * (planFrequency TEXT, planPercent REAL). Nullable — existing rows stay null.
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE debts ADD COLUMN planFrequency TEXT")
+                db.execSQL("ALTER TABLE debts ADD COLUMN planPercent REAL")
+            }
+        }
+
+        val MIGRATION_3_5 = object : Migration(3, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                MIGRATION_3_4.migrate(db)
+                MIGRATION_4_5.migrate(db)
+            }
+        }
+
+        val MIGRATION_2_5 = object : Migration(2, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                MIGRATION_2_3.migrate(db)
+                MIGRATION_3_4.migrate(db)
+                MIGRATION_4_5.migrate(db)
+            }
+        }
+
+        val MIGRATION_1_5 = object : Migration(1, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                MIGRATION_1_2.migrate(db)
+                MIGRATION_2_3.migrate(db)
+                MIGRATION_3_4.migrate(db)
+                MIGRATION_4_5.migrate(db)
+            }
+        }
+
         fun getInstance(context: Context): DeudasDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -117,7 +152,11 @@ abstract class DeudasDatabase : RoomDatabase() {
                         MIGRATION_1_3,
                         MIGRATION_3_4,
                         MIGRATION_1_4,
-                        MIGRATION_2_4
+                        MIGRATION_2_4,
+                        MIGRATION_4_5,
+                        MIGRATION_3_5,
+                        MIGRATION_2_5,
+                        MIGRATION_1_5
                     )
                     .build()
                     .also { INSTANCE = it }

@@ -8,7 +8,7 @@
     <string name="test_mode_hint">Modo prueba · datos solo en este dispositivo</string>
     <string name="google_sign_in">Conectar con Google</string>
     <string name="google_sign_in_hint">Usa tu cuenta de Google para iniciar sesión</string>
-    <string name="login_footer">V1.3.5 · Datos locales + respaldo opcional en Google Drive.</string>
+    <string name="login_footer">V1.3.6 · Datos locales + respaldo opcional en Google Drive.</string>
 
     <!-- Sesión -->
     <string name="guest_display_name">Invitado</string>
@@ -116,6 +116,23 @@
     <string name="paid_full_hint">Deuda saldada</string>
     <string name="field_required">Completa los campos requeridos</string>
     <string name="invalid_amount">Ingresa un monto válido</string>
+
+    <!-- Plan de cuotas -->
+    <string name="plan_section_title">Plan de cuotas</string>
+    <string name="plan_section_optional">Opcional</string>
+    <string name="plan_freq_none">Ninguno</string>
+    <string name="plan_freq_weekly">Semanal</string>
+    <string name="plan_freq_biweekly">Quincenal</string>
+    <string name="plan_freq_monthly">Mensual</string>
+    <string name="plan_percent_label">% de la deuda que cuenta como una cuota completa</string>
+    <string name="plan_percent_hint">Ej. 30 para mensual, 25 para quincenal (1–100)</string>
+    <string name="plan_percent_invalid">Ingresa un porcentaje entre 1 y 100</string>
+    <string name="plan_cuota_preview">Cuota calculada: %1$s</string>
+    <string name="debt_plan_label">%1$s · %2$s%% · cuota %3$s</string>
+    <string name="payment_suggested_cuotas">Cuotas sugeridas</string>
+    <string name="payment_suggested_cuota_line">%1$s: %2$s</string>
+    <string name="payment_meets_cuota_hint">Este monto cubre la cuota de «%1$s» (%2$s)</string>
+
 
     <!-- Recibo -->
     <string name="receipt_title">Comprobante</string>

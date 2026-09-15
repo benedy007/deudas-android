@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benedy.deudas.R
+import com.benedy.deudas.ui.util.debtPlanLabel
 import com.benedy.deudas.ui.util.formatMoney
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,6 +99,35 @@ fun RegisterPaymentScreen(
                 }
             }
 
+            val plannedDebts = debts.filter { it.hasInstallmentPlan() }
+            if (plannedDebts.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = stringResource(R.string.payment_suggested_cuotas),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        plannedDebts.forEach { debt ->
+                            val cuota = debt.cuotaAmount() ?: return@forEach
+                            Text(
+                                text = stringResource(
+                                    R.string.payment_suggested_cuota_line,
+                                    debt.description,
+                                    formatMoney(cuota)
+                                ),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            }
+
             Text(
                 stringResource(R.string.open_debts_oldest_first),
                 style = MaterialTheme.typography.titleMedium
@@ -119,6 +149,13 @@ fun RegisterPaymentScreen(
                                 fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal
                             )
                             Text(stringResource(R.string.remaining_label, formatMoney(debt.remainingBalance)))
+                            debtPlanLabel(debt)?.let { planText ->
+                                Text(
+                                    text = planText,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
                             if (index == 0) {
                                 Text(
                                     text = stringResource(R.string.payment_oldest_badge),
@@ -154,6 +191,27 @@ fun RegisterPaymentScreen(
                 label = { Text(stringResource(R.string.payment_note)) },
                 modifier = Modifier.fillMaxWidth()
             )
+
+            val enteredAmount = ui.amount.replace(',', '.').toDoubleOrNull()
+            val oldestWithPlan = debts.firstOrNull { it.hasInstallmentPlan() }
+            val oldestCuota = oldestWithPlan?.cuotaAmount()
+            if (
+                enteredAmount != null &&
+                oldestWithPlan != null &&
+                oldestCuota != null &&
+                enteredAmount + 1e-9 >= oldestCuota
+            ) {
+                Text(
+                    text = stringResource(
+                        R.string.payment_meets_cuota_hint,
+                        oldestWithPlan.description,
+                        formatMoney(oldestCuota)
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
             when (ui.error) {
                 "amount" -> Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
                 "over_total" -> Text(stringResource(R.string.payment_over_total), color = MaterialTheme.colorScheme.error)

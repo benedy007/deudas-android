@@ -78,16 +78,22 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
         clientId: Long,
         description: String,
         amount: Double,
-        fechaEntrega: Long? = null
+        fechaEntrega: Long? = null,
+        planFrequency: String? = null,
+        planPercent: Double? = null
     ): Long {
         val safe = amount.coerceAtLeast(0.0)
+        val freq = planFrequency?.takeIf { it.isNotBlank() }
+        val pct = if (freq != null) planPercent else null
         return debtDao.insert(
             DebtEntity(
                 clientId = clientId,
                 description = description.trim(),
                 originalAmount = safe,
                 remainingBalance = safe,
-                fechaEntrega = fechaEntrega
+                fechaEntrega = fechaEntrega,
+                planFrequency = freq,
+                planPercent = pct
             )
         )
     }

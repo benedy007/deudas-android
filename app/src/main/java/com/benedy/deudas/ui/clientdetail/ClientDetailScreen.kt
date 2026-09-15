@@ -42,6 +42,7 @@ import com.benedy.deudas.R
 import com.benedy.deudas.data.local.entity.ClientEntity
 import com.benedy.deudas.data.local.entity.DebtEntity
 import com.benedy.deudas.ui.util.WhatsAppHelper
+import com.benedy.deudas.ui.util.debtPlanLabel
 import com.benedy.deudas.ui.util.formatDate
 import com.benedy.deudas.ui.util.formatMoney
 
@@ -268,6 +269,14 @@ private fun DebtCard(debt: DebtEntity, onPay: () -> Unit) {
                     MaterialTheme.colorScheme.error
                 }
             )
+            debtPlanLabel(debt)?.let { planText ->
+                Text(
+                    text = planText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontWeight = FontWeight.Medium
+                )
+            }
             Text(
                 text = formatDate(debt.createdAt),
                 style = MaterialTheme.typography.bodySmall,

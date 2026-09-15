@@ -3,6 +3,8 @@ package com.benedy.deudas.ui.debt
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +23,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,16 +41,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benedy.deudas.R
+import com.benedy.deudas.data.local.entity.PlanFrequency
 import com.benedy.deudas.ui.util.formatMoney
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AddDebtScreen(
     viewModel: AddDebtViewModel,
@@ -172,9 +177,68 @@ fun AddDebtScreen(
                     .clickable { showDatePicker = true }
             )
 
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.plan_section_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = stringResource(R.string.plan_section_optional),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                FilterChip(
+                    selected = ui.planFrequency == null,
+                    onClick = { viewModel.onPlanFrequency(null) },
+                    label = { Text(stringResource(R.string.plan_freq_none)) }
+                )
+                FilterChip(
+                    selected = ui.planFrequency == PlanFrequency.WEEKLY,
+                    onClick = { viewModel.onPlanFrequency(PlanFrequency.WEEKLY) },
+                    label = { Text(stringResource(R.string.plan_freq_weekly)) }
+                )
+                FilterChip(
+                    selected = ui.planFrequency == PlanFrequency.BIWEEKLY,
+                    onClick = { viewModel.onPlanFrequency(PlanFrequency.BIWEEKLY) },
+                    label = { Text(stringResource(R.string.plan_freq_biweekly)) }
+                )
+                FilterChip(
+                    selected = ui.planFrequency == PlanFrequency.MONTHLY,
+                    onClick = { viewModel.onPlanFrequency(PlanFrequency.MONTHLY) },
+                    label = { Text(stringResource(R.string.plan_freq_monthly)) }
+                )
+            }
+
+            if (ui.planFrequency != null) {
+                OutlinedTextField(
+                    value = ui.planPercent,
+                    onValueChange = viewModel::onPlanPercent,
+                    label = { Text(stringResource(R.string.plan_percent_label)) },
+                    supportingText = { Text(stringResource(R.string.plan_percent_hint)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                val cuota = ui.calculatedCuota()
+                if (cuota != null) {
+                    Text(
+                        text = stringResource(R.string.plan_cuota_preview, formatMoney(cuota)),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
             when (ui.error) {
                 "required" -> Text(stringResource(R.string.field_required), color = MaterialTheme.colorScheme.error)
                 "amount" -> Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
+                "plan_percent" -> Text(stringResource(R.string.plan_percent_invalid), color = MaterialTheme.colorScheme.error)
             }
             Spacer(Modifier.height(16.dp))
             Button(onClick = viewModel::save, enabled = !ui.saving, modifier = Modifier.fillMaxWidth()) {

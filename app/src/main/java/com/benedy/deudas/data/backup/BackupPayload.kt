@@ -9,7 +9,7 @@ import org.json.JSONObject
 
 /**
  * Snapshot of all Room CRM tables for Drive backup/restore.
- * Format version 1 — includes client address fields + optional debt fechaEntrega.
+ * Format version 1 — includes addresses, fechaEntrega, and optional installment plan.
  */
 data class BackupPayload(
     val formatVersion: Int = FORMAT_VERSION,
@@ -49,6 +49,8 @@ data class BackupPayload(
                         .put("remainingBalance", d.remainingBalance)
                         .put("createdAt", d.createdAt)
                         .put("fechaEntrega", d.fechaEntrega ?: JSONObject.NULL)
+                        .put("planFrequency", d.planFrequency ?: JSONObject.NULL)
+                        .put("planPercent", d.planPercent ?: JSONObject.NULL)
                 )
             }
         })
@@ -120,7 +122,9 @@ data class BackupPayload(
                             originalAmount = o.getDouble("originalAmount"),
                             remainingBalance = o.getDouble("remainingBalance"),
                             createdAt = o.optLong("createdAt", System.currentTimeMillis()),
-                            fechaEntrega = o.nullableLong("fechaEntrega")
+                            fechaEntrega = o.nullableLong("fechaEntrega"),
+                            planFrequency = o.nullableString("planFrequency"),
+                            planPercent = o.nullableDouble("planPercent")
                         )
                     )
                 }
@@ -175,6 +179,11 @@ data class BackupPayload(
         private fun JSONObject.nullableLong(key: String): Long? {
             if (!has(key) || isNull(key)) return null
             return getLong(key)
+        }
+
+        private fun JSONObject.nullableDouble(key: String): Double? {
+            if (!has(key) || isNull(key)) return null
+            return getDouble(key)
         }
     }
 }
