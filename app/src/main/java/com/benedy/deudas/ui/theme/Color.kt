@@ -77,6 +77,9 @@ val HubAddProductIconStart = Color(0xFFF57C00)
 val HubAddProductIconEnd = Color(0xFFFFCA28)
 val HubAddProductContent = Color(0xFFE65100)
 
-/** Client list tonal status */
+/** Client list tonal status (pastel BGs — always pair with dark on-content) */
 val ClientOverdueBg = Color(0xFFFFDAD6)
 val ClientRecentBg = Color(0xFFC8E6C9)
+/** Near-black text/icons for status cards (readable in light and dark theme) */
+val ClientStatusOnBg = Color(0xFF161D16)
+val ClientStatusOnBgVariant = Color(0xFF404940)

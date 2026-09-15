@@ -58,6 +58,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benedy.deudas.R
 import com.benedy.deudas.ui.theme.ClientOverdueBg
 import com.benedy.deudas.ui.theme.ClientRecentBg
+import com.benedy.deudas.ui.theme.ClientStatusOnBg
+import com.benedy.deudas.ui.theme.ClientStatusOnBgVariant
 import com.benedy.deudas.ui.util.formatMoney
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -253,31 +255,51 @@ private fun ClientRow(item: ClientListItem, onClick: () -> Unit) {
     val supporting = lines.joinToString("\n")
 
     // Overdue red wins for background; recent payment shows green badge if both
+    val usesStatusBg = item.isOverdue || item.hasRecentPayment
     val containerColor = when {
         item.isOverdue -> ClientOverdueBg
         item.hasRecentPayment -> ClientRecentBg
         else -> MaterialTheme.colorScheme.surface
     }
+    // Pastel status backgrounds stay light in both themes — force dark text/icons
+    // so dark-theme onSurface (near-white) never lands on green/red cards.
+    val contentColor = if (usesStatusBg) ClientStatusOnBg else MaterialTheme.colorScheme.onSurface
+    val supportingColor =
+        if (usesStatusBg) ClientStatusOnBgVariant else MaterialTheme.colorScheme.onSurfaceVariant
+    val iconColor = if (usesStatusBg) ClientStatusOnBg else MaterialTheme.colorScheme.onSurfaceVariant
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor)
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor,
+            contentColor = contentColor
+        )
     ) {
         ListItem(
             headlineContent = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(client.name, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        client.name,
+                        fontWeight = FontWeight.SemiBold,
+                        color = contentColor
+                    )
                     if (item.isOverdue && item.hasRecentPayment) {
                         Spacer(Modifier.width(8.dp))
                         RecentPaymentBadge()
                     }
                 }
             },
-            supportingContent = { Text(supporting) },
+            supportingContent = {
+                Text(supporting, color = supportingColor)
+            },
             leadingContent = {
-                Icon(Icons.Outlined.Person, contentDescription = null)
+                Icon(
+                    Icons.Outlined.Person,
+                    contentDescription = null,
+                    tint = iconColor
+                )
             },
             trailingContent = {
                 when {
@@ -285,7 +307,13 @@ private fun ClientRow(item: ClientListItem, onClick: () -> Unit) {
                     item.hasRecentPayment -> StatusDot(Color(0xFF2E7D32))
                 }
             },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            colors = ListItemDefaults.colors(
+                containerColor = Color.Transparent,
+                headlineColor = contentColor,
+                supportingColor = supportingColor,
+                leadingIconColor = iconColor,
+                trailingIconColor = iconColor
+            ),
             modifier = Modifier.clickable(onClick = onClick)
         )
     }
