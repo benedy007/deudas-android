@@ -8,7 +8,7 @@
     <string name="test_mode_hint">Modo prueba · datos solo en este dispositivo</string>
     <string name="google_sign_in">Conectar con Google</string>
     <string name="google_sign_in_hint">Usa tu cuenta de Google para iniciar sesión</string>
-    <string name="login_footer">V1.5.0 · Datos locales + respaldo opcional en Google Drive.</string>
+    <string name="login_footer">V1.5.1 · Datos locales + respaldo opcional en Google Drive.</string>
 
     <!-- Sesión -->
     <string name="guest_display_name">Invitado</string>
@@ -57,6 +57,9 @@
     <string name="sort_chip_debt">Deuda</string>
     <string name="sort_chip_name">Nombre</string>
     <string name="sort_chip_fecha">Entrega</string>
+    <string name="client_filter_all">Todos</string>
+    <string name="client_filter_with_debt">Con deuda</string>
+    <string name="client_filter_without_debt">Sin deuda</string>
     <string name="fecha_entrega">Fecha de entrega</string>
     <string name="fecha_entrega_optional">Opcional</string>
     <string name="fecha_entrega_label">Entrega: %1$s</string>

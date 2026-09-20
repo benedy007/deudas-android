@@ -75,6 +75,7 @@ fun ClientsListScreen(
     val clients by viewModel.clients.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
     val sort by viewModel.sort.collectAsStateWithLifecycle()
+    val debtFilter by viewModel.debtFilter.collectAsStateWithLifecycle()
     var sortMenuOpen by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -157,6 +158,31 @@ fun ClientsListScreen(
                 },
                 shape = RoundedCornerShape(16.dp)
             )
+
+            if (viewModel.showDebtFilter) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = debtFilter == ClientDebtFilter.ALL,
+                        onClick = { viewModel.onDebtFilter(ClientDebtFilter.ALL) },
+                        label = { Text(stringResource(R.string.client_filter_all)) }
+                    )
+                    FilterChip(
+                        selected = debtFilter == ClientDebtFilter.WITH_DEBT,
+                        onClick = { viewModel.onDebtFilter(ClientDebtFilter.WITH_DEBT) },
+                        label = { Text(stringResource(R.string.client_filter_with_debt)) }
+                    )
+                    FilterChip(
+                        selected = debtFilter == ClientDebtFilter.WITHOUT_DEBT,
+                        onClick = { viewModel.onDebtFilter(ClientDebtFilter.WITHOUT_DEBT) },
+                        label = { Text(stringResource(R.string.client_filter_without_debt)) }
+                    )
+                }
+            }
 
             Row(
                 modifier = Modifier

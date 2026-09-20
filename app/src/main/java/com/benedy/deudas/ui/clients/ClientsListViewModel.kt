@@ -20,6 +20,12 @@ enum class ClientSortMode {
     FECHA_ENTREGA
 }
 
+enum class ClientDebtFilter {
+    ALL,
+    WITH_DEBT,
+    WITHOUT_DEBT
+}
+
 /**
  * List row model. UI card color priority (ClientsListScreen):
  * 1) [hasRecentPayment] → green (al día)
@@ -48,9 +54,14 @@ class ClientsListViewModel(
 
     private val searchQuery = MutableStateFlow("")
     private val sortMode = MutableStateFlow(ClientSortMode.NAME_AZ)
+    private val debtFilterMode = MutableStateFlow(
+        if (onlyWithBalance) ClientDebtFilter.WITH_DEBT else ClientDebtFilter.ALL
+    )
 
     val query: StateFlow<String> = searchQuery
     val sort: StateFlow<ClientSortMode> = sortMode
+    val debtFilter: StateFlow<ClientDebtFilter> = debtFilterMode
+    val showDebtFilter: Boolean = !onlyWithBalance
 
     /**
      * Nested combine of at most 3 flows so each transform keeps typed List
@@ -65,18 +76,22 @@ class ClientsListViewModel(
         Triple(clients, debts, payments)
     }
 
+    private val querySortFilter = combine(searchQuery, sortMode, debtFilterMode) { query, sort, filter ->
+        Triple(query, sort, filter)
+    }
+
     val clients: StateFlow<List<ClientListItem>> = combine(
         clientsDebtsPayments,
-        searchQuery,
-        sortMode
-    ) { data, query, sort ->
+        querySortFilter
+    ) { data, controls ->
         try {
             buildClientListItems(
                 clients = data.first,
                 debts = data.second,
                 payments = data.third,
-                query = query,
-                sort = sort,
+                query = controls.first,
+                sort = controls.second,
+                debtFilter = controls.third,
                 onlyWithBalance = onlyWithBalance
             )
         } catch (e: Exception) {
@@ -96,6 +111,12 @@ class ClientsListViewModel(
         sortMode.value = mode
     }
 
+    fun onDebtFilter(filter: ClientDebtFilter) {
+        if (!onlyWithBalance) {
+            debtFilterMode.value = filter
+        }
+    }
+
     companion object {
         private const val TAG = "ClientsListVM"
         private const val ONE_MONTH_MS = 30L * 24 * 60 * 60 * 1000
@@ -108,7 +129,8 @@ class ClientsListViewModel(
             query: String,
             sort: ClientSortMode,
             now: Long = System.currentTimeMillis(),
-            onlyWithBalance: Boolean = false
+            onlyWithBalance: Boolean = false,
+            debtFilter: ClientDebtFilter = ClientDebtFilter.ALL
         ): List<ClientListItem> {
             val overdueCutoff = now - ONE_MONTH_MS
             val recentCutoff = now - FOURTEEN_DAYS_MS
@@ -145,7 +167,11 @@ class ClientsListViewModel(
                     hasRecentPayment = hasRecentPayment
                 )
             }.let { list ->
-                if (onlyWithBalance) list.filter { it.totalRemaining > 0 } else list
+                when (if (onlyWithBalance) ClientDebtFilter.WITH_DEBT else debtFilter) {
+                    ClientDebtFilter.ALL -> list
+                    ClientDebtFilter.WITH_DEBT -> list.filter { it.totalRemaining > 0 }
+                    ClientDebtFilter.WITHOUT_DEBT -> list.filter { it.totalRemaining <= 0 }
+                }
             }
 
             return when (sort) {
