@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Deudas</string>
+    <string name="app_name">ContaFácil</string>
 
     <!-- Login -->
     <string name="login_subtitle">Gestiona clientes y deudas de forma sencilla.\nConecta con Google o entra sin cuenta.</string>
@@ -8,7 +8,7 @@
     <string name="test_mode_hint">Modo prueba · datos solo en este dispositivo</string>
     <string name="google_sign_in">Conectar con Google</string>
     <string name="google_sign_in_hint">Usa tu cuenta de Google para iniciar sesión</string>
-    <string name="login_footer">V1.4.1 · Datos locales + respaldo opcional en Google Drive.</string>
+    <string name="login_footer">V1.5.0 · Datos locales + respaldo opcional en Google Drive.</string>
 
     <!-- Sesión -->
     <string name="guest_display_name">Invitado</string>
@@ -164,7 +164,7 @@
     <string name="settings_title">Ajustes</string>
     <string name="settings_subtitle">Datos de tu compañía que aparecen en los comprobantes.</string>
     <string name="settings_company_name">Nombre de la compañía</string>
-    <string name="settings_company_name_hint">Si lo dejas vacío, se usa «Deudas»</string>
+    <string name="settings_company_name_hint">Si lo dejas vacío, se usa «ContaFácil»</string>
     <string name="settings_company_phone">Teléfono de la compañía</string>
     <string name="settings_company_phone_hint">Ej. 18095551234</string>
     <string name="settings_company_phone_support">Opcional · aparece en el recibo</string>
@@ -179,7 +179,7 @@
     <string name="dashboard_title">Resumen</string>
     <string name="dashboard_total_por_cobrar">Total por cobrar</string>
     <string name="dashboard_cobrado_mes">Cobrado del mes</string>
-    <string name="dashboard_clientes_mora">Clientes en mora</string>
+    <string name="dashboard_cobrado_dia">Cobrado en el día</string>
     <string name="no_clients_with_debt">No hay clientes con saldo pendiente.</string>
     <string name="client_photo">Foto del cliente</string>
     <string name="client_photo_optional">Foto opcional</string>
@@ -204,5 +204,13 @@
     <string name="cobranza_note_save">Guardar nota</string>
     <string name="promised_pay_pick">Fecha prometida</string>
     <string name="promised_pay_date">Prometió pagar el %1$s</string>
+
+
+    <!-- Sesión / respaldo en Ajustes (v1.5.0) -->
+    <string name="settings_session_title">Sesión</string>
+    <string name="settings_session_guest">Invitado · modo prueba</string>
+    <string name="settings_session_google">Sesión con Google</string>
+    <string name="settings_backup_title">Respaldo Google Drive</string>
+    <string name="hub_greeting">Hola, %1$s</string>
 
 </resources>

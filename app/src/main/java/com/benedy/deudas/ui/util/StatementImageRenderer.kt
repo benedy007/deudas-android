@@ -26,7 +26,7 @@ object StatementImageRenderer {
     fun renderForShare(
         context: Context,
         statement: DebtCrmRepository.ClientStatement,
-        companyName: String = "Deudas",
+        companyName: String = "ContaFácil",
         companyPhone: String? = null
     ): Uri {
         val bitmap = renderBitmap(statement, companyName, companyPhone)
@@ -51,7 +51,7 @@ object StatementImageRenderer {
         companyPhone: String?
     ): Bitmap {
         val dateFmt = SimpleDateFormat("dd/MM/yyyy", Locale("es", "DO"))
-        val brand = companyName.ifBlank { "Deudas" }
+        val brand = companyName.ifBlank { "ContaFácil" }
         val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = 0xFF0D47A1.toInt()
             textSize = 52f

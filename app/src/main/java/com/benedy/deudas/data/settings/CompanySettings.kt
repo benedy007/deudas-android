@@ -2,7 +2,7 @@ package com.benedy.deudas.data.settings
 
 /**
  * Company branding used on receipts. Empty fields fall back to app defaults
- * ("Deudas", no phone, default thank-you footer).
+ * ("ContaFácil", no phone, default thank-you footer).
  */
 data class CompanySettings(
     val companyName: String = "",
@@ -19,7 +19,7 @@ data class CompanySettings(
         receiptFooter.trim().ifBlank { DEFAULT_RECEIPT_FOOTER }
 
     companion object {
-        const val DEFAULT_COMPANY_NAME = "Deudas"
+        const val DEFAULT_COMPANY_NAME = "ContaFácil"
         const val DEFAULT_RECEIPT_FOOTER = "Gracias por su pago"
     }
 }

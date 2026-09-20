@@ -32,7 +32,7 @@ object ReceiptImageRenderer {
         debtDescription: String,
         dateMs: Long,
         remaining: Double,
-        companyName: String = "Deudas",
+        companyName: String = "ContaFácil",
         companyPhone: String? = null,
         footerNote: String = "Gracias por su pago"
     ): Uri {
@@ -69,7 +69,7 @@ object ReceiptImageRenderer {
         debtDescription: String,
         dateMs: Long,
         remaining: Double,
-        companyName: String = "Deudas",
+        companyName: String = "ContaFácil",
         companyPhone: String? = null,
         footerNote: String = "Gracias por su pago"
     ): Uri = renderForShare(
@@ -150,7 +150,7 @@ object ReceiptImageRenderer {
         debtDescription: String,
         dateMs: Long,
         remaining: Double,
-        companyName: String = "Deudas",
+        companyName: String = "ContaFácil",
         companyPhone: String? = null,
         footerNote: String = "Gracias por su pago"
     ): Bitmap {
@@ -231,7 +231,7 @@ object ReceiptImageRenderer {
         val footerPreview = buildString {
             append(footerNote.ifBlank { "Gracias por su pago" })
             append(" · ")
-            append(companyName.ifBlank { "Deudas" })
+            append(companyName.ifBlank { "ContaFácil" })
         }
         contentHeight += 48f + measureMultilineHeight(footerPreview, footerPaint, WIDTH - PADDING * 4) + 24f + PADDING
 
@@ -267,7 +267,7 @@ object ReceiptImageRenderer {
         var y = cardTop + 80f
         canvas.drawText("Comprobante de pago", WIDTH / 2f, y, titlePaint)
         y += 48f
-        canvas.drawText(companyName.ifBlank { "Deudas" }, WIDTH / 2f, y, appPaint)
+        canvas.drawText(companyName.ifBlank { "ContaFácil" }, WIDTH / 2f, y, appPaint)
         y += 36f
         if (phoneLine != null) {
             canvas.drawText(phoneLine, WIDTH / 2f, y, labelCenterPaint)
@@ -295,7 +295,7 @@ object ReceiptImageRenderer {
         val footer = buildString {
             append(footerNote.ifBlank { "Gracias por su pago" })
             append(" · ")
-            append(companyName.ifBlank { "Deudas" })
+            append(companyName.ifBlank { "ContaFácil" })
         }
         val footerLines = wrapLines(footer, footerPaint, WIDTH - PADDING * 4)
         val fm = footerPaint.fontMetrics

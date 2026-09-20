@@ -1,45 +1,48 @@
-# Arquitectura — Deudas (Android)
+# Arquitectura — ContaFácil (Android)
 
-## V1.4.2 (actual)
+## V1.5.0 (actual)
 
-- **Lista de clientes compacta:** avatar + nombre + botón WhatsApp (sin direcciones, saldo ni fecha en la fila).
-- **Colores de estado:** abono reciente (≤14 días) → verde (al día), gana sobre mora; si no, deuda vencida → rojo; si no, superficie por defecto.
+- **Nombre:** ContaFácil (package/applicationId sigue `com.benedy.deudas`).
+- **Home limpio:** solo Ver clientes, Ver productos, Cobrar, Historial. Sin «¿Qué deseas hacer?», sin Agregar cliente/producto en hub, sin email ni Salir ni Respaldo.
+- **Resumen:** Total por cobrar, Cobrado del mes, **Cobrado en el día** (timezone local del dispositivo).
+- **Ajustes:** compañía + sesión (email/invitado) + Salir + Respaldo Drive.
+- **Lista clientes:** avatar + nombre + **total adeudado** + WhatsApp; verde (abono reciente) / rojo (mora).
+
+## V1.4.3
+
+- LazyColumn keys únicos para notas/deudas.
+
+## V1.4.2
+
+- Lista de clientes compacta + colores de estado (abono reciente gana sobre mora).
 
 ## V1.4.1
 
-- **Eliminar pagos (LIFO):** solo el último pago (o grupo waterfall) del cliente se puede borrar; más antiguos: botón oculto; si se intenta: «Solo puedes eliminar el último pago de este cliente».
+- Eliminar pagos (LIFO).
 
 ## V1.4.0
 
 ```
 ui/
   auth/          Login + AuthViewModel
-  home/          Home hub + dashboard (totales) + Respaldo
+  home/          Home hub + dashboard
   backup/        BackupViewModel (Drive authorize + upload/download)
-  clients/       Lista (todos / solo con deuda) + Agregar/Editar + foto
-  clientdetail/  Detalle / Cobrar + recordatorio WA + estado de cuenta + notas cobranza
-  debt/          Agregar deuda (+ aviso límite de crédito)
+  clients/       Lista + Agregar/Editar + foto
+  clientdetail/  Detalle / Cobrar + cobranza
+  debt/          Agregar deuda
   payment/       Registrar pago (waterfall)
   receipt/       Comprobante + WhatsApp
-  settings/      Ajustes compañía
-  history/       Historial de pagos + reenvío + eliminar
+  settings/      Ajustes compañía + sesión + Drive
+  history/       Historial de pagos
   products/      Lista + Agregar producto
   navigation/    NavGraph con auth gate
-  theme/
 data/
-  auth/          AuthRepository + UserSession (Credential Manager)
-  backup/        DriveAuthHelper + DriveBackupRepository + BackupPayload (v2)
-  local/         Room (entities, daos, DeudasDatabase + MIGRATION_1_2 … MIGRATION_5_6)
-  repository/    DebtCrmRepository (export/import, dashboard, statement)
+  auth/          AuthRepository + UserSession
+  backup/        DriveAuthHelper + DriveBackupRepository
+  local/         Room (migraciones explícitas)
+  repository/    DebtCrmRepository
 ```
 
-- **UI:** Jetpack Compose + Material 3 + Navigation Compose
-- **Dashboard:** total por cobrar, cobrado del mes, clientes en mora
-- **Cobrar:** picker solo clientes con saldo > 0; Ver clientes muestra todos
-- **Foto cliente:** cámara/galería → filesDir/client_photos + photoPath
-- **Crédito / saldo inicial:** límite con aviso; saldo inicial crea deuda al crear cliente
-- **Cobranza:** notas + fecha prometida; recordatorio WhatsApp; estado de cuenta (imagen)
-- **Auth / Drive / pagos waterfall / cuotas / ajustes:** igual que v1.3.x
 - **Migraciones:** explícitas, sin `fallbackToDestructiveMigration`
 
 ## Principios

@@ -158,7 +158,7 @@ fun ClientDetailScreen(
                             clientName = current.name,
                             remaining = total,
                             debts = debts,
-                            companyName = settings.companyName.ifBlank { "Deudas" }
+                            companyName = settings.companyName.ifBlank { "ContaFácil" }
                         )
                         WhatsAppHelper.openChat(context, current.phone, msg)
                     }

@@ -89,7 +89,7 @@ class ClientDetailViewModel(
         val dateFmt = SimpleDateFormat("dd/MM/yyyy", Locale("es", "DO"))
         val open = debts.filter { it.remainingBalance > 0 }
         val earliest = open.mapNotNull { it.fechaEntrega }.minOrNull()
-        val brand = companyName.ifBlank { "Deudas" }
+        val brand = companyName.ifBlank { "ContaFácil" }
         return buildString {
             appendLine("Hola $clientName,")
             appendLine()

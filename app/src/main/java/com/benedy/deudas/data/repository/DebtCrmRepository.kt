@@ -30,7 +30,7 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
     data class DashboardStats(
         val totalPorCobrar: Double = 0.0,
         val cobradoDelMes: Double = 0.0,
-        val clientesEnMora: Int = 0
+        val cobradoEnElDia: Double = 0.0
     )
 
     // --- Clientes ---
@@ -320,24 +320,18 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
         ) { debts, payments, _ ->
             val now = System.currentTimeMillis()
             val monthStart = startOfMonthMs(now)
-            val overdueCutoff = now - 30L * 24 * 60 * 60 * 1000
+            val dayStart = startOfDayMs(now)
             val totalPorCobrar = debts.sumOf { it.remainingBalance.coerceAtLeast(0.0) }
             val cobradoDelMes = payments
                 .filter { it.createdAt >= monthStart }
                 .sumOf { it.amount }
-            val openByClient = debts
-                .filter { it.remainingBalance > 0 }
-                .groupBy { it.clientId }
-            val clientesEnMora = openByClient.count { (_, clientDebts) ->
-                clientDebts.any { debt ->
-                    debt.createdAt < overdueCutoff ||
-                        (debt.fechaEntrega != null && debt.fechaEntrega < now)
-                }
-            }
+            val cobradoEnElDia = payments
+                .filter { it.createdAt >= dayStart }
+                .sumOf { it.amount }
             DashboardStats(
                 totalPorCobrar = totalPorCobrar,
                 cobradoDelMes = cobradoDelMes,
-                clientesEnMora = clientesEnMora
+                cobradoEnElDia = cobradoEnElDia
             )
         }
     }
@@ -427,6 +421,17 @@ class DebtCrmRepository(private val db: DeudasDatabase) {
             val cal = Calendar.getInstance()
             cal.timeInMillis = now
             cal.set(Calendar.DAY_OF_MONTH, 1)
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            return cal.timeInMillis
+        }
+
+        /** Start of local calendar day (device timezone, e.g. America/Santo_Domingo). */
+        fun startOfDayMs(now: Long = System.currentTimeMillis()): Long {
+            val cal = Calendar.getInstance()
+            cal.timeInMillis = now
             cal.set(Calendar.HOUR_OF_DAY, 0)
             cal.set(Calendar.MINUTE, 0)
             cal.set(Calendar.SECOND, 0)

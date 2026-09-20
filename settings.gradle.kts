@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Deudas"
+rootProject.name = "ContaFacil"
 include(":app")

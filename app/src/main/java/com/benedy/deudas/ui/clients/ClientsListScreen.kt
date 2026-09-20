@@ -58,6 +58,7 @@ import com.benedy.deudas.ui.theme.ClientOverdueBg
 import com.benedy.deudas.ui.theme.ClientRecentBg
 import com.benedy.deudas.ui.theme.ClientStatusOnBg
 import com.benedy.deudas.ui.util.WhatsAppHelper
+import com.benedy.deudas.ui.util.formatMoney
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -230,7 +231,7 @@ fun ClientsListScreen(
 }
 
 /**
- * Compact list row: avatar + name + WhatsApp.
+ * Compact list row: avatar + name + total adeudado + WhatsApp.
  * Status colors: recent payment (green) wins over overdue (red).
  */
 @Composable
@@ -274,14 +275,23 @@ private fun ClientRow(item: ClientListItem, onClick: () -> Unit) {
                 else MaterialTheme.colorScheme.surfaceVariant
             )
             Spacer(Modifier.width(12.dp))
-            Text(
-                text = client.name,
-                fontWeight = FontWeight.SemiBold,
-                color = contentColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = client.name,
+                    fontWeight = FontWeight.SemiBold,
+                    color = contentColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = formatMoney(item.totalRemaining),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = if (usesStatusBg) contentColor.copy(alpha = 0.92f)
+                    else MaterialTheme.colorScheme.primary,
+                    maxLines = 1
+                )
+            }
             if (client.phone.isNotBlank()) {
                 IconButton(
                     onClick = { WhatsAppHelper.openChat(context, client.phone) },

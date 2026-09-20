@@ -103,21 +103,14 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
         }
 
         composable(Routes.HOME) {
-            val backupVm = viewModel<BackupViewModel>(
-                factory = BackupViewModelFactory(app.authRepository, crm)
-            )
             val homeVm = viewModel<HomeViewModel>(
                 factory = HomeViewModelFactory(crm)
             )
             val dashboard by homeVm.dashboard.collectAsStateWithLifecycle()
             HomeScreen(
                 uiState = uiState,
-                backupViewModel = backupVm,
                 dashboard = dashboard,
-                onLogout = { authViewModel.signOut() },
-                onAddClient = { navController.navigate(Routes.ADD_CLIENT) },
                 onCharge = { navController.navigate(Routes.SELECT_CLIENT_CHARGE) },
-                onAddProduct = { navController.navigate(Routes.ADD_PRODUCT) },
                 onViewClients = { navController.navigate(Routes.CLIENTS) },
                 onViewProducts = { navController.navigate(Routes.PRODUCTS) },
                 onPaymentHistory = { navController.navigate(Routes.PAYMENT_HISTORY) },
@@ -129,8 +122,14 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
             val vm = viewModel<SettingsViewModel>(
                 factory = SettingsViewModelFactory(app.settingsRepository)
             )
+            val backupVm = viewModel<BackupViewModel>(
+                factory = BackupViewModelFactory(app.authRepository, crm)
+            )
             SettingsScreen(
                 viewModel = vm,
+                uiState = uiState,
+                backupViewModel = backupVm,
+                onLogout = { authViewModel.signOut() },
                 onBack = { navController.popBackStack() }
             )
         }

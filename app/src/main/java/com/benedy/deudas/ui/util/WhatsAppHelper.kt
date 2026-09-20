@@ -130,11 +130,11 @@ object WhatsAppHelper {
         debtDescription: String,
         dateMs: Long,
         remaining: Double,
-        companyName: String = "Deudas",
+        companyName: String = "ContaFácil",
         companyPhone: String? = null,
         footerNote: String = "Gracias por su pago"
     ): String = buildString {
-        val brand = companyName.ifBlank { "Deudas" }
+        val brand = companyName.ifBlank { "ContaFácil" }
         val note = footerNote.ifBlank { "Gracias por su pago" }
         appendLine("🧾 *Comprobante de pago*")
         appendLine("*$brand*")
