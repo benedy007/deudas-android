@@ -1,5 +1,10 @@
 package com.benedy.deudas.ui.clients
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,24 +25,27 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.Sort
+import androidx.compose.material.icons.outlined.People
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,12 +57,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benedy.deudas.R
 import com.benedy.deudas.ui.components.ClientAvatar
+import com.benedy.deudas.ui.components.EmptyState
 import com.benedy.deudas.ui.theme.ClientOverdueBg
 import com.benedy.deudas.ui.theme.ClientRecentBg
 import com.benedy.deudas.ui.theme.ClientStatusOnBg
@@ -73,10 +82,12 @@ fun ClientsListScreen(
     onClientClick: (Long) -> Unit
 ) {
     val clients by viewModel.clients.collectAsStateWithLifecycle()
+    val listReady by viewModel.listReady.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
     val sort by viewModel.sort.collectAsStateWithLifecycle()
     val debtFilter by viewModel.debtFilter.collectAsStateWithLifecycle()
-    var sortMenuOpen by remember { mutableStateOf(false) }
+    var showSortSheet by remember { mutableStateOf(false) }
+    val sortSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
         topBar = {
@@ -88,36 +99,8 @@ fun ClientsListScreen(
                     }
                 },
                 actions = {
-                    Box {
-                        IconButton(onClick = { sortMenuOpen = true }) {
-                            Icon(Icons.Outlined.Sort, contentDescription = stringResource(R.string.clients_sort))
-                        }
-                        DropdownMenu(
-                            expanded = sortMenuOpen,
-                            onDismissRequest = { sortMenuOpen = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.sort_by_debt)) },
-                                onClick = {
-                                    viewModel.onSortMode(ClientSortMode.DEBT_HIGH_TO_LOW)
-                                    sortMenuOpen = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.sort_by_name)) },
-                                onClick = {
-                                    viewModel.onSortMode(ClientSortMode.NAME_AZ)
-                                    sortMenuOpen = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.sort_by_fecha_entrega)) },
-                                onClick = {
-                                    viewModel.onSortMode(ClientSortMode.FECHA_ENTREGA)
-                                    sortMenuOpen = false
-                                }
-                            )
-                        }
+                    IconButton(onClick = { showSortSheet = true }) {
+                        Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = stringResource(R.string.clients_sort))
                     }
                 }
             )
@@ -126,6 +109,7 @@ fun ClientsListScreen(
             if (showAddFab) {
                 FloatingActionButton(
                     onClick = onAddClient,
+                    modifier = Modifier.navigationBarsPadding(),
                     elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(defaultElevation = 10.dp)
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_client_title))
@@ -159,7 +143,7 @@ fun ClientsListScreen(
                 shape = RoundedCornerShape(16.dp)
             )
 
-            if (viewModel.showDebtFilter) {
+            AnimatedVisibility(visible = viewModel.showDebtFilter) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -209,47 +193,123 @@ fun ClientsListScreen(
 
             Spacer(Modifier.height(4.dp))
 
-            if (clients.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    if (subtitle != null) {
-                        Text(subtitle, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-                        Spacer(Modifier.height(12.dp))
-                    }
-                    Text(
-                        text = when {
-                            query.isNotBlank() -> stringResource(R.string.clients_search_empty)
-                            emptyMessage != null -> emptyMessage
-                            else -> stringResource(R.string.clients_empty)
-                        },
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (subtitle != null) {
-                        item {
+            AnimatedContent(
+                targetState = Triple(listReady, clients.isEmpty(), debtFilter to (query to sort)),
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "clientsListContent"
+            ) { (ready, isEmpty, _) ->
+                when {
+                    !ready -> {
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
-                                text = subtitle,
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                "…",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                    items(clients, key = { it.client.id }) { item ->
-                        ClientRow(item = item, onClick = { onClientClick(item.client.id) })
+                    isEmpty -> {
+                        val message = when {
+                            query.isNotBlank() -> stringResource(R.string.clients_search_empty)
+                            debtFilter != ClientDebtFilter.ALL -> stringResource(R.string.empty_filter_clients)
+                            emptyMessage != null -> emptyMessage
+                            else -> stringResource(R.string.clients_empty)
+                        }
+                        EmptyState(
+                            message = message,
+                            title = if (query.isBlank() && debtFilter == ClientDebtFilter.ALL) {
+                                stringResource(R.string.empty_clients_title)
+                            } else null,
+                            icon = Icons.Outlined.People,
+                            actionLabel = if (showAddFab && query.isBlank() && debtFilter == ClientDebtFilter.ALL) {
+                                stringResource(R.string.empty_clients_cta)
+                            } else null,
+                            onAction = if (showAddFab) onAddClient else null
+                        )
                     }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 8.dp,
+                                bottom = 88.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (subtitle != null) {
+                                item(key = "subtitle", contentType = "subtitle") {
+                                    Text(
+                                        text = subtitle,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                }
+                            }
+                            items(
+                                items = clients,
+                                key = { "client-${it.client.id}" },
+                                contentType = { "client" }
+                            ) { item ->
+                                ClientRow(item = item, onClick = { onClientClick(item.client.id) })
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showSortSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSortSheet = false },
+            sheetState = sortSheetState
+        ) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+                    .padding(bottom = 28.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.clients_sort_sheet_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.sort_by_debt)) },
+                    modifier = Modifier.clickable {
+                        viewModel.onSortMode(ClientSortMode.DEBT_HIGH_TO_LOW)
+                        showSortSheet = false
+                    }
+                )
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.sort_by_name)) },
+                    modifier = Modifier.clickable {
+                        viewModel.onSortMode(ClientSortMode.NAME_AZ)
+                        showSortSheet = false
+                    }
+                )
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.sort_by_fecha_entrega)) },
+                    modifier = Modifier.clickable {
+                        viewModel.onSortMode(ClientSortMode.FECHA_ENTREGA)
+                        showSortSheet = false
+                    }
+                )
+                TextButton(
+                    onClick = { showSortSheet = false },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text(stringResource(R.string.cancel))
                 }
             }
         }
@@ -265,7 +325,6 @@ private fun ClientRow(item: ClientListItem, onClick: () -> Unit) {
     val client = item.client
     val context = LocalContext.current
 
-    // Priority: recent abono → green (al día); else overdue → red; else default
     val usesStatusBg = item.hasRecentPayment || item.isOverdue
     val containerColor = when {
         item.hasRecentPayment -> ClientRecentBg

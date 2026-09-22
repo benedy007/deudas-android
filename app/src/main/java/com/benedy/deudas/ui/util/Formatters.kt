@@ -13,4 +13,6 @@ fun formatMoney(amount: Double): String = currencyFormat.format(amount)
 
 fun formatDate(epochMs: Long): String = dateFormat.format(Date(epochMs))
 
+fun formatDateTime(epochMs: Long): String = formatDate(epochMs)
+
 fun digitsOnly(phone: String): String = phone.filter { it.isDigit() }

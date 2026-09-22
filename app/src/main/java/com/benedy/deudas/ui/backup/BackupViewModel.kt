@@ -12,6 +12,7 @@ import com.benedy.deudas.data.backup.DriveAuthHelper
 import com.benedy.deudas.data.backup.DriveBackupException
 import com.benedy.deudas.data.backup.DriveBackupRepository
 import com.benedy.deudas.data.repository.DebtCrmRepository
+import com.benedy.deudas.data.settings.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,23 +20,31 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 data class BackupUiState(
     val isBusy: Boolean = false,
+    val isRefreshingStatus: Boolean = false,
     val statusMessage: String? = null,
     val isError: Boolean = false,
     val pendingConsent: IntentSender? = null,
-    val showRestoreConfirm: Boolean = false
+    val showRestoreConfirm: Boolean = false,
+    /** Epoch ms of last known Drive backup (local cache or refreshed). */
+    val lastBackupAtMs: Long? = null
 )
 
 enum class BackupAction {
     BACKUP,
-    RESTORE
+    RESTORE,
+    REFRESH_STATUS
 }
 
 class BackupViewModel(
     private val authRepository: AuthRepository,
     private val crmRepository: DebtCrmRepository,
+    private val settingsRepository: SettingsRepository,
     private val driveAuth: DriveAuthHelper = DriveAuthHelper(),
     private val driveBackup: DriveBackupRepository = DriveBackupRepository()
 ) : ViewModel() {
@@ -50,6 +59,14 @@ class BackupViewModel(
 
     val isGoogleSignedIn: Boolean
         get() = authRepository.session.value?.let { !it.isGuest } == true
+
+    init {
+        viewModelScope.launch {
+            settingsRepository.lastBackupAtMs.collect { ms ->
+                _uiState.update { it.copy(lastBackupAtMs = ms) }
+            }
+        }
+    }
 
     fun clearStatus() {
         _uiState.update { it.copy(statusMessage = null, isError = false) }
@@ -79,21 +96,46 @@ class BackupViewModel(
         startAuthorizedAction(activity, BackupAction.RESTORE)
     }
 
+    /** Pull-to-refresh: query Drive backup metadata only (no CRM refetch). */
+    fun refreshBackupStatus(activity: Activity) {
+        if (isGuest || !isGoogleSignedIn) {
+            _uiState.update {
+                it.copy(
+                    isRefreshingStatus = false,
+                    isError = false,
+                    statusMessage = null
+                )
+            }
+            return
+        }
+        startAuthorizedAction(activity, BackupAction.REFRESH_STATUS)
+    }
+
     fun onAuthorizationResult(activity: Activity, data: Intent?) {
         val action = pendingAction
         if (action == null) return
         viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true, pendingConsent = null, statusMessage = null) }
+            _uiState.update { it.copy(isBusy = action != BackupAction.REFRESH_STATUS, pendingConsent = null, statusMessage = null) }
             when (val outcome = driveAuth.resultFromIntent(activity, data)) {
                 is DriveAuthHelper.AuthOutcome.Success -> runDriveAction(action, outcome.accessToken)
                 is DriveAuthHelper.AuthOutcome.Error -> {
                     _uiState.update {
-                        it.copy(isBusy = false, isError = true, statusMessage = outcome.message)
+                        it.copy(
+                            isBusy = false,
+                            isRefreshingStatus = false,
+                            isError = true,
+                            statusMessage = outcome.message
+                        )
                     }
                 }
                 is DriveAuthHelper.AuthOutcome.NeedsUserConsent -> {
                     _uiState.update {
-                        it.copy(isBusy = false, isError = true, statusMessage = "Se requiere autorización.")
+                        it.copy(
+                            isBusy = false,
+                            isRefreshingStatus = false,
+                            isError = true,
+                            statusMessage = "Se requiere autorización."
+                        )
                     }
                 }
             }
@@ -105,6 +147,7 @@ class BackupViewModel(
         _uiState.update {
             it.copy(
                 isBusy = false,
+                isRefreshingStatus = false,
                 pendingConsent = null,
                 isError = true,
                 statusMessage = "Autorización de Drive cancelada."
@@ -128,18 +171,30 @@ class BackupViewModel(
     private fun startAuthorizedAction(activity: Activity, action: BackupAction) {
         pendingAction = action
         viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true, statusMessage = null, isError = false) }
+            _uiState.update {
+                it.copy(
+                    isBusy = action != BackupAction.REFRESH_STATUS,
+                    isRefreshingStatus = action == BackupAction.REFRESH_STATUS,
+                    statusMessage = null,
+                    isError = false
+                )
+            }
             when (val outcome = driveAuth.authorize(activity)) {
                 is DriveAuthHelper.AuthOutcome.Success -> runDriveAction(action, outcome.accessToken)
                 is DriveAuthHelper.AuthOutcome.NeedsUserConsent -> {
                     _uiState.update {
-                        it.copy(isBusy = false, pendingConsent = outcome.intentSender)
+                        it.copy(isBusy = false, isRefreshingStatus = false, pendingConsent = outcome.intentSender)
                     }
                 }
                 is DriveAuthHelper.AuthOutcome.Error -> {
                     pendingAction = null
                     _uiState.update {
-                        it.copy(isBusy = false, isError = true, statusMessage = outcome.message)
+                        it.copy(
+                            isBusy = false,
+                            isRefreshingStatus = false,
+                            isError = true,
+                            statusMessage = outcome.message
+                        )
                     }
                 }
             }
@@ -154,12 +209,16 @@ class BackupViewModel(
                     withContext(Dispatchers.IO) {
                         driveBackup.uploadBackup(accessToken, payload.toJson())
                     }
+                    val now = System.currentTimeMillis()
+                    settingsRepository.setLastBackupAt(now)
                     val count = payload.clients.size + payload.products.size +
                         payload.debts.size + payload.payments.size
                     _uiState.update {
                         it.copy(
                             isBusy = false,
+                            isRefreshingStatus = false,
                             isError = false,
+                            lastBackupAtMs = now,
                             statusMessage = "Respaldo guardado en Google Drive ($count registros)."
                         )
                     }
@@ -175,20 +234,56 @@ class BackupViewModel(
                     _uiState.update {
                         it.copy(
                             isBusy = false,
+                            isRefreshingStatus = false,
                             isError = false,
                             statusMessage = "Datos restaurados desde Google Drive ($count registros)."
                         )
                     }
                 }
+                BackupAction.REFRESH_STATUS -> {
+                    val info = withContext(Dispatchers.IO) {
+                        driveBackup.getBackupInfo(accessToken)
+                    }
+                    if (info == null) {
+                        _uiState.update {
+                            it.copy(
+                                isBusy = false,
+                                isRefreshingStatus = false,
+                                isError = false,
+                                statusMessage = "No se encontró respaldo en Drive"
+                            )
+                        }
+                    } else {
+                        val parsed = parseDriveRfc3339(info.modifiedTime)
+                        if (parsed != null) {
+                            settingsRepository.setLastBackupAt(parsed)
+                        }
+                        _uiState.update {
+                            it.copy(
+                                isBusy = false,
+                                isRefreshingStatus = false,
+                                isError = false,
+                                lastBackupAtMs = parsed ?: it.lastBackupAtMs,
+                                statusMessage = "Respaldo en Drive actualizado"
+                            )
+                        }
+                    }
+                }
             }
         } catch (e: DriveBackupException) {
             _uiState.update {
-                it.copy(isBusy = false, isError = true, statusMessage = e.message)
+                it.copy(
+                    isBusy = false,
+                    isRefreshingStatus = false,
+                    isError = true,
+                    statusMessage = e.message
+                )
             }
         } catch (e: Exception) {
             _uiState.update {
                 it.copy(
                     isBusy = false,
+                    isRefreshingStatus = false,
                     isError = true,
                     statusMessage = e.message ?: "Error en el respaldo"
                 )
@@ -197,16 +292,36 @@ class BackupViewModel(
             pendingAction = null
         }
     }
+
+    companion object {
+        private fun parseDriveRfc3339(value: String?): Long? {
+            if (value.isNullOrBlank()) return null
+            return try {
+                val fmt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+                    timeZone = TimeZone.getTimeZone("UTC")
+                }
+                fmt.parse(value)?.time ?: run {
+                    val fmt2 = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+                        timeZone = TimeZone.getTimeZone("UTC")
+                    }
+                    fmt2.parse(value)?.time
+                }
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
 }
 
 class BackupViewModelFactory(
     private val authRepository: AuthRepository,
-    private val crmRepository: DebtCrmRepository
+    private val crmRepository: DebtCrmRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(BackupViewModel::class.java)) {
-            return BackupViewModel(authRepository, crmRepository) as T
+            return BackupViewModel(authRepository, crmRepository, settingsRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel: ${modelClass.name}")
     }

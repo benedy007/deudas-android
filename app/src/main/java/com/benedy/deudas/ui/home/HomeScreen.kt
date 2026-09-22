@@ -1,5 +1,9 @@
 package com.benedy.deudas.ui.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +32,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -77,6 +86,8 @@ fun HomeScreen(
         else -> session?.displayName?.takeIf { it.isNotBlank() }
             ?: stringResource(R.string.user_fallback)
     }
+    var dashboardVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { dashboardVisible = true }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -118,33 +129,39 @@ fun HomeScreen(
                     fontWeight = FontWeight.SemiBold
                 )
 
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                AnimatedVisibility(
+                    visible = dashboardVisible,
+                    enter = fadeIn(animationSpec = tween(420)) +
+                        scaleIn(initialScale = 0.96f, animationSpec = tween(420))
                 ) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            text = stringResource(R.string.dashboard_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
                         )
-                        DashboardStat(
-                            label = stringResource(R.string.dashboard_total_por_cobrar),
-                            value = formatMoney(dashboard.totalPorCobrar)
-                        )
-                        DashboardStat(
-                            label = stringResource(R.string.dashboard_cobrado_mes),
-                            value = formatMoney(dashboard.cobradoDelMes)
-                        )
-                        DashboardStat(
-                            label = stringResource(R.string.dashboard_cobrado_dia),
-                            value = formatMoney(dashboard.cobradoEnElDia)
-                        )
+                    ) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = stringResource(R.string.dashboard_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            DashboardStat(
+                                label = stringResource(R.string.dashboard_total_por_cobrar),
+                                value = formatMoney(dashboard.totalPorCobrar)
+                            )
+                            DashboardStat(
+                                label = stringResource(R.string.dashboard_cobrado_mes),
+                                value = formatMoney(dashboard.cobradoDelMes)
+                            )
+                            DashboardStat(
+                                label = stringResource(R.string.dashboard_cobrado_dia),
+                                value = formatMoney(dashboard.cobradoEnElDia)
+                            )
+                        }
                     }
                 }
 

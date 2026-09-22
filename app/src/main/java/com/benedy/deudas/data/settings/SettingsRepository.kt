@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -23,6 +24,11 @@ class SettingsRepository(private val context: Context) {
         )
     }
 
+    /** Locally cached last successful Drive backup time (epoch ms), or null. */
+    val lastBackupAtMs: Flow<Long?> = context.settingsDataStore.data.map { prefs ->
+        prefs[KEY_LAST_BACKUP_AT]
+    }
+
     suspend fun save(settings: CompanySettings) {
         context.settingsDataStore.edit { prefs ->
             prefs[KEY_COMPANY_NAME] = settings.companyName.trim()
@@ -31,9 +37,16 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
+    suspend fun setLastBackupAt(epochMs: Long) {
+        context.settingsDataStore.edit { prefs ->
+            prefs[KEY_LAST_BACKUP_AT] = epochMs
+        }
+    }
+
     companion object {
         private val KEY_COMPANY_NAME = stringPreferencesKey("company_name")
         private val KEY_COMPANY_PHONE = stringPreferencesKey("company_phone")
         private val KEY_RECEIPT_FOOTER = stringPreferencesKey("receipt_footer")
+        private val KEY_LAST_BACKUP_AT = longPreferencesKey("last_backup_at_ms")
     }
 }

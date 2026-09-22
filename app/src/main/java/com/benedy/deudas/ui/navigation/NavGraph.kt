@@ -123,7 +123,7 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
                 factory = SettingsViewModelFactory(app.settingsRepository)
             )
             val backupVm = viewModel<BackupViewModel>(
-                factory = BackupViewModelFactory(app.authRepository, crm)
+                factory = BackupViewModelFactory(app.authRepository, crm, app.settingsRepository)
             )
             SettingsScreen(
                 viewModel = vm,

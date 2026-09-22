@@ -8,7 +8,7 @@
     <string name="test_mode_hint">Modo prueba · datos solo en este dispositivo</string>
     <string name="google_sign_in">Conectar con Google</string>
     <string name="google_sign_in_hint">Usa tu cuenta de Google para iniciar sesión</string>
-    <string name="login_footer">V1.5.1 · Datos locales + respaldo opcional en Google Drive.</string>
+    <string name="login_footer">V1.6.0 · Datos locales + respaldo opcional en Google Drive.</string>
 
     <!-- Sesión -->
     <string name="guest_display_name">Invitado</string>
@@ -215,5 +215,33 @@
     <string name="settings_session_google">Sesión con Google</string>
     <string name="settings_backup_title">Respaldo Google Drive</string>
     <string name="hub_greeting">Hola, %1$s</string>
+
+
+    <!-- v1.6.0 UI polish -->
+    <string name="empty_clients_title">Sin clientes aún</string>
+    <string name="empty_clients_cta">Agregar cliente</string>
+    <string name="empty_products_title">Sin productos aún</string>
+    <string name="empty_products_cta">Agregar producto</string>
+    <string name="empty_debts_title">Sin deudas</string>
+    <string name="empty_debts_message">Este cliente no tiene deudas registradas.
+Registra la primera para empezar a cobrar.</string>
+    <string name="empty_debts_cta">Registrar deuda</string>
+    <string name="empty_filter_clients">No hay clientes con este filtro.</string>
+    <string name="clients_sort_sheet_title">Ordenar clientes</string>
+    <string name="settings_section_account">Cuenta</string>
+    <string name="settings_section_backup">Respaldo</string>
+    <string name="settings_section_company">Compañía</string>
+    <string name="settings_section_about">Acerca de</string>
+    <string name="settings_app_version">Versión %1$s</string>
+    <string name="backup_last_none">Aún no hay respaldo en este dispositivo</string>
+    <string name="backup_last_at">Último respaldo: %1$s</string>
+    <string name="backup_refresh_hint">Desliza hacia abajo para actualizar el estado del respaldo</string>
+    <string name="backup_status_ok">Respaldo en Drive actualizado</string>
+    <string name="backup_status_missing">No se encontró respaldo en Drive</string>
+    <string name="backup_refresh_failed">No se pudo consultar el respaldo</string>
+    <string name="payment_actions_title">Acciones rápidas</string>
+    <string name="payment_action_register">Registrar pago</string>
+    <string name="payment_action_add_debt">Agregar deuda</string>
+    <string name="payment_action_history">Ver historial</string>
 
 </resources>

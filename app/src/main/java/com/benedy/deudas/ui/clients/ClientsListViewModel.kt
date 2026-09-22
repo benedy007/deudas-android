@@ -10,8 +10,10 @@ import com.benedy.deudas.data.repository.DebtCrmRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 
 enum class ClientSortMode {
@@ -63,6 +65,9 @@ class ClientsListViewModel(
     val debtFilter: StateFlow<ClientDebtFilter> = debtFilterMode
     val showDebtFilter: Boolean = !onlyWithBalance
 
+    private val _listReady = MutableStateFlow(false)
+    val listReady: StateFlow<Boolean> = _listReady.asStateFlow()
+
     /**
      * Nested combine of at most 3 flows so each transform keeps typed List
      * parameters. The 5-arg [combine] vararg overload packs values into
@@ -98,8 +103,11 @@ class ClientsListViewModel(
             Log.e(TAG, "Failed to build client list items", e)
             emptyList()
         }
+    }.onEach {
+        _listReady.value = true
     }.catch { e ->
         Log.e(TAG, "Clients list flow failed", e)
+        _listReady.value = true
         emit(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 

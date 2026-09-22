@@ -24,6 +24,24 @@ class DriveBackupRepository {
         }
     }
 
+
+    fun getBackupInfo(accessToken: String): DriveBackupInfo? {
+        val q = URLEncoder.encode(
+            "name = '${BackupPayload.BACKUP_FILE_NAME}' and trashed = false",
+            "UTF-8"
+        )
+        val url =
+            "https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=$q&fields=files(id,name,modifiedTime)"
+        val body = httpGet(accessToken, url)
+        val files = JSONObject(body).optJSONArray("files") ?: return null
+        if (files.length() == 0) return null
+        val file = files.getJSONObject(0)
+        return DriveBackupInfo(
+            fileId = file.getString("id"),
+            modifiedTime = if (file.has("modifiedTime") && !file.isNull("modifiedTime")) file.getString("modifiedTime") else null
+        )
+    }
+
     fun downloadBackup(accessToken: String): String {
         val fileId = findBackupFileId(accessToken)
             ?: throw DriveBackupException("No hay respaldo en Google Drive. Crea uno primero.")
@@ -117,5 +135,11 @@ class DriveBackupRepository {
         return text
     }
 }
+
+data class DriveBackupInfo(
+    val fileId: String,
+    /** RFC3339 from Drive, or null if unknown. */
+    val modifiedTime: String?
+)
 
 class DriveBackupException(message: String) : Exception(message)

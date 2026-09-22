@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material3.AlertDialog
@@ -30,9 +32,11 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -40,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +64,7 @@ import com.benedy.deudas.data.local.entity.ClientEntity
 import com.benedy.deudas.data.local.entity.CobranzaNoteEntity
 import com.benedy.deudas.data.local.entity.DebtEntity
 import com.benedy.deudas.ui.components.ClientAvatar
+import com.benedy.deudas.ui.components.EmptyState
 import com.benedy.deudas.ui.util.StatementImageRenderer
 import com.benedy.deudas.ui.util.WhatsAppHelper
 import com.benedy.deudas.ui.util.debtPlanLabel
@@ -95,6 +101,8 @@ fun ClientDetailScreen(
     val scope = rememberCoroutineScope()
     val app = context.applicationContext as DeudasApp
     var showPromisePicker by remember { mutableStateOf(false) }
+    var showQuickActions by remember { mutableStateOf(false) }
+    val quickSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var statementError by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
@@ -123,6 +131,14 @@ fun ClientDetailScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showQuickActions = true },
+                modifier = Modifier.navigationBarsPadding()
+            ) {
+                Icon(Icons.Outlined.MoreHoriz, contentDescription = stringResource(R.string.payment_actions_title))
+            }
         }
     ) { padding ->
         val current = client
@@ -236,6 +252,61 @@ fun ClientDetailScreen(
             text = { Text(stringResource(R.string.share_receipt_failed)) }
         )
     }
+    if (showQuickActions) {
+        ModalBottomSheet(
+            onDismissRequest = { showQuickActions = false },
+            sheetState = quickSheetState
+        ) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.payment_actions_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Button(
+                    onClick = {
+                        showQuickActions = false
+                        onRegisterPayment(null)
+                    },
+                    enabled = debts.any { it.remainingBalance > 0 },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Outlined.Payments, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.payment_action_register))
+                }
+                FilledTonalButton(
+                    onClick = {
+                        showQuickActions = false
+                        onAddDebt()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Outlined.Add, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.payment_action_add_debt))
+                }
+                OutlinedButton(
+                    onClick = {
+                        showQuickActions = false
+                        onPaymentHistory()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Outlined.History, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.payment_action_history))
+                }
+            }
+        }
+    }
+
 }
 
 @Composable
@@ -266,7 +337,7 @@ private fun ClientDetailBody(
         modifier = Modifier
             .fillMaxSize()
             .padding(contentPadding),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 88.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
@@ -415,7 +486,7 @@ private fun ClientDetailBody(
                 }
             }
         }
-        items(notes, key = { "note-${it.id}" }) { note ->
+        items(notes, key = { "note-${it.id}" }, contentType = { "note" }) { note ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     Modifier.padding(12.dp),
@@ -453,14 +524,21 @@ private fun ClientDetailBody(
             )
         }
         if (debts.isEmpty()) {
-            item {
-                Text(
-                    text = stringResource(R.string.no_debts),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            item(key = "debts-empty", contentType = "empty") {
+                EmptyState(
+                    message = stringResource(R.string.empty_debts_message),
+                    title = stringResource(R.string.empty_debts_title),
+                    actionLabel = stringResource(R.string.empty_debts_cta),
+                    onAction = onAddDebt,
+                    modifier = Modifier.height(220.dp)
                 )
             }
         } else {
-            items(debts, key = { "debt-${it.id}" }) { debt ->
+            items(
+                items = debts,
+                key = { "debt-${it.id}" },
+                contentType = { "debt" }
+            ) { debt ->
                 DebtCard(debt = debt, onPay = { onRegisterPayment(debt.id) })
             }
         }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -26,6 +27,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -47,9 +50,13 @@ fun RegisterPaymentScreen(
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val debts by viewModel.openDebts.collectAsStateWithLifecycle()
     val totalRemaining by viewModel.totalRemaining.collectAsStateWithLifecycle()
+    val haptic = LocalHapticFeedback.current
 
     LaunchedEffect(ui.paymentId) {
-        ui.paymentId?.let { onPaid(it) }
+        ui.paymentId?.let { id ->
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onPaid(id)
+        }
     }
 
     Scaffold(
@@ -68,6 +75,7 @@ fun RegisterPaymentScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
