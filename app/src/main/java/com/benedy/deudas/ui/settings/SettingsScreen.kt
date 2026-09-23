@@ -115,9 +115,20 @@ fun SettingsScreen(
     LaunchedEffect(ui.pendingShare) {
         val pending = ui.pendingShare ?: return@LaunchedEffect
         try {
-            CrmTextExport.shareTextFile(context, pending.shareUri, pending.fileName)
+            if (pending.downloadsUri != null) {
+                CrmTextExport.openTextFile(context, pending.downloadsUri, pending.fileName)
+            } else {
+                CrmTextExport.shareTextFile(context, pending.shareUri, pending.fileName)
+            }
         } catch (_: Exception) {
-            // Share sheet failure still reported via exportStatus if set
+            // If a text viewer is unavailable, still offer the secondary share path.
+            if (pending.downloadsUri != null) {
+                try {
+                    CrmTextExport.shareTextFile(context, pending.shareUri, pending.fileName)
+                } catch (_: Exception) {
+                    // The export itself succeeded; there is no compatible activity to open it.
+                }
+            }
         } finally {
             viewModel.clearPendingShare()
         }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.benedy.deudas.R
 import com.benedy.deudas.data.repository.DebtCrmRepository
 import com.benedy.deudas.data.settings.CompanySettings
 import com.benedy.deudas.data.settings.SettingsRepository
@@ -96,7 +97,7 @@ class SettingsViewModel(
 
     /**
      * Builds a readable .txt from Room CRM data, writes to cache (+ Downloads when possible),
-     * then signals the UI to open the share sheet.
+     * then signals the UI to open the saved text (or share it when Downloads is unavailable).
      */
     fun exportToText(context: Context) {
         if (_ui.value.exporting) return
@@ -124,7 +125,11 @@ class SettingsViewModel(
                 _ui.update {
                     it.copy(
                         exporting = false,
-                        exportStatus = "Archivo listo",
+                        exportStatus = if (result.downloadsUri != null) {
+                            appContext.getString(R.string.export_saved_to_downloads)
+                        } else {
+                            appContext.getString(R.string.settings_export_ready)
+                        },
                         exportError = false,
                         pendingShare = result
                     )

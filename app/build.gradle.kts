@@ -30,8 +30,8 @@ android {
         applicationId = "com.benedy.deudas"
         minSdk = 26
         targetSdk = 35
-        versionCode = 21
-        versionName = "1.6.1"
+        versionCode = 22
+        versionName = "1.6.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

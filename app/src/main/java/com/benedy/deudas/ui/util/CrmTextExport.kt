@@ -1,6 +1,7 @@
 package com.benedy.deudas.ui.util
 
 import android.content.ClipData
+import android.content.ClipDescription
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -9,6 +10,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.core.content.FileProvider
+import com.benedy.deudas.R
 import com.benedy.deudas.data.local.entity.ClientEntity
 import com.benedy.deudas.data.local.entity.DebtEntity
 import com.benedy.deudas.data.local.entity.PaymentEntity
@@ -160,10 +162,17 @@ object CrmTextExport {
             type = "text/plain"
             putExtra(Intent.EXTRA_STREAM, uri)
             putExtra(Intent.EXTRA_SUBJECT, fileName)
-            clipData = ClipData.newUri(context.contentResolver, fileName, uri)
+            putExtra(Intent.EXTRA_TITLE, fileName)
+            clipData = ClipData(
+                ClipDescription(fileName, arrayOf("text/plain")),
+                ClipData.Item(uri)
+            )
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        val chooser = Intent.createChooser(send, fileName).apply {
+        val chooser = Intent.createChooser(
+            send,
+            context.getString(R.string.export_text_chooser_title)
+        ).apply {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             clipData = send.clipData
         }
@@ -173,6 +182,22 @@ object CrmTextExport {
         } else {
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(chooser)
+        }
+    }
+
+    fun openTextFile(context: Context, uri: Uri, fileName: String) {
+        val view = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "text/plain")
+            putExtra(Intent.EXTRA_TITLE, fileName)
+            addCategory(Intent.CATEGORY_DEFAULT)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        val activity = context.findActivity()
+        if (activity != null) {
+            activity.startActivity(view)
+        } else {
+            view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(view)
         }
     }
 
