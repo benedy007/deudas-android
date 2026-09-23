@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.CloudUpload
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.AlertDialog
@@ -44,6 +45,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -51,6 +54,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -64,6 +68,7 @@ import com.benedy.deudas.R
 import com.benedy.deudas.data.settings.CompanySettings
 import com.benedy.deudas.ui.auth.AuthUiState
 import com.benedy.deudas.ui.backup.BackupViewModel
+import com.benedy.deudas.ui.util.CrmTextExport
 import com.benedy.deudas.ui.util.formatDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,11 +103,30 @@ fun SettingsScreen(
         authLauncher.launch(IntentSenderRequest.Builder(sender).build())
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     LaunchedEffect(ui.saved) {
         if (ui.saved) {
             kotlinx.coroutines.delay(1500)
             viewModel.clearSavedFlag()
         }
+    }
+
+    LaunchedEffect(ui.pendingShare) {
+        val pending = ui.pendingShare ?: return@LaunchedEffect
+        try {
+            CrmTextExport.shareTextFile(context, pending.shareUri, pending.fileName)
+        } catch (_: Exception) {
+            // Share sheet failure still reported via exportStatus if set
+        } finally {
+            viewModel.clearPendingShare()
+        }
+    }
+
+    LaunchedEffect(ui.exportStatus) {
+        val msg = ui.exportStatus ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(msg)
+        viewModel.clearExportStatus()
     }
 
     if (backupState.showRestoreConfirm) {
@@ -136,7 +160,8 @@ fun SettingsScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = backupState.isRefreshingStatus,
@@ -320,6 +345,47 @@ fun SettingsScreen(
                         }
                         Spacer(Modifier.height(12.dp))
                     }
+                }
+
+
+                Spacer(Modifier.height(20.dp))
+
+                // —— Exportar ——
+                SettingsSectionHeader(
+                    icon = Icons.Outlined.Description,
+                    title = stringResource(R.string.settings_section_export)
+                )
+                SettingsSectionCard {
+                    Text(
+                        text = stringResource(R.string.settings_export_hint),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedButton(
+                        onClick = { viewModel.exportToText(context) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .height(48.dp),
+                        enabled = !ui.exporting,
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        if (ui.exporting) {
+                            CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.settings_exporting))
+                        } else {
+                            Icon(
+                                imageVector = Icons.Outlined.Description,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.settings_export_text))
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
                 }
 
                 Spacer(Modifier.height(20.dp))

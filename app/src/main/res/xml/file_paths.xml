@@ -3,5 +3,6 @@
     <cache-path name="receipt_images" path="receipts/" />
     <cache-path name="cache_root" path="." />
     <cache-path name="camera_capture" path="camera_capture/" />
+    <cache-path name="exports" path="exports/" />
     <files-path name="client_photos" path="client_photos/" />
 </paths>

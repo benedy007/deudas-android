@@ -120,7 +120,7 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
 
         composable(Routes.SETTINGS) {
             val vm = viewModel<SettingsViewModel>(
-                factory = SettingsViewModelFactory(app.settingsRepository)
+                factory = SettingsViewModelFactory(app.settingsRepository, crm)
             )
             val backupVm = viewModel<BackupViewModel>(
                 factory = BackupViewModelFactory(app.authRepository, crm, app.settingsRepository)

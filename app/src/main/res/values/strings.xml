@@ -231,6 +231,11 @@ Registra la primera para empezar a cobrar.</string>
     <string name="settings_section_account">Cuenta</string>
     <string name="settings_section_backup">Respaldo</string>
     <string name="settings_section_company">Compañía</string>
+    <string name="settings_section_export">Exportar</string>
+    <string name="settings_export_text">Exportar a texto</string>
+    <string name="settings_export_hint">Crea un archivo .txt legible con clientes, deudas y saldos. Puedes guardarlo o enviarlo.</string>
+    <string name="settings_exporting">Exportando…</string>
+    <string name="settings_export_ready">Archivo listo</string>
     <string name="settings_section_about">Acerca de</string>
     <string name="settings_app_version">Versión %1$s</string>
     <string name="backup_last_none">Aún no hay respaldo en este dispositivo</string>
