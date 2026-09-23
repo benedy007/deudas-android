@@ -185,22 +185,6 @@ object CrmTextExport {
         }
     }
 
-    fun openTextFile(context: Context, uri: Uri, fileName: String) {
-        val view = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "text/plain")
-            putExtra(Intent.EXTRA_TITLE, fileName)
-            addCategory(Intent.CATEGORY_DEFAULT)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        val activity = context.findActivity()
-        if (activity != null) {
-            activity.startActivity(view)
-        } else {
-            view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(view)
-        }
-    }
-
     private fun insertIntoDownloads(context: Context, fileName: String, bytes: ByteArray): Uri? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             // MediaStore Downloads collection is API 29+; skip on 26–28 without storage permission.

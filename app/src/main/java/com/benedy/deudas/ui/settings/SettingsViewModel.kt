@@ -97,7 +97,7 @@ class SettingsViewModel(
 
     /**
      * Builds a readable .txt from Room CRM data, writes to cache (+ Downloads when possible),
-     * then signals the UI to open the saved text (or share it when Downloads is unavailable).
+     * then signals the UI to open the share sheet.
      */
     fun exportToText(context: Context) {
         if (_ui.value.exporting) return
@@ -126,9 +126,15 @@ class SettingsViewModel(
                     it.copy(
                         exporting = false,
                         exportStatus = if (result.downloadsUri != null) {
-                            appContext.getString(R.string.export_saved_to_downloads)
+                            appContext.getString(
+                                R.string.export_saved_to_downloads,
+                                result.fileName
+                            )
                         } else {
-                            appContext.getString(R.string.settings_export_ready)
+                            appContext.getString(
+                                R.string.settings_export_ready,
+                                result.fileName
+                            )
                         },
                         exportError = false,
                         pendingShare = result

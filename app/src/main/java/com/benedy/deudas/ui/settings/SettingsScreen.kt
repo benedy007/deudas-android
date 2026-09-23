@@ -115,20 +115,10 @@ fun SettingsScreen(
     LaunchedEffect(ui.pendingShare) {
         val pending = ui.pendingShare ?: return@LaunchedEffect
         try {
-            if (pending.downloadsUri != null) {
-                CrmTextExport.openTextFile(context, pending.downloadsUri, pending.fileName)
-            } else {
-                CrmTextExport.shareTextFile(context, pending.shareUri, pending.fileName)
-            }
+            // Keep the v1.6.1 flow: let the user choose where to send/save the export.
+            CrmTextExport.shareTextFile(context, pending.shareUri, pending.fileName)
         } catch (_: Exception) {
-            // If a text viewer is unavailable, still offer the secondary share path.
-            if (pending.downloadsUri != null) {
-                try {
-                    CrmTextExport.shareTextFile(context, pending.shareUri, pending.fileName)
-                } catch (_: Exception) {
-                    // The export itself succeeded; there is no compatible activity to open it.
-                }
-            }
+            // The export itself succeeded; there is no compatible activity to share it.
         } finally {
             viewModel.clearPendingShare()
         }
