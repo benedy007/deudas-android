@@ -1,6 +1,7 @@
 package com.benedy.deudas.ui.auth
 
-import android.content.Context
+import android.app.Activity
+import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -32,7 +33,7 @@ class AuthViewModel(
                     it.copy(
                         session = session,
                         isSignedIn = session != null,
-                        isLoading = false
+                        isLoading = if (session != null) false else it.isLoading
                     )
                 }
             }
@@ -52,10 +53,46 @@ class AuthViewModel(
         }
     }
 
-    fun signInWithGoogle(activityContext: Context) {
+    /**
+     * Prepara el intent de Google Sign-In y marca loading.
+     * Devuelve null si falla la configuración (errorMessage ya seteado).
+     * El Activity Result launcher debe llamar a [onGoogleIntentResult] al volver.
+     */
+    fun beginGoogleSignIn(activity: Activity): Intent? {
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        return try {
+            authRepository.getGoogleSignInIntent(activity)
+        } catch (e: Exception) {
+            Log.e(TAG, "No se pudo crear intent de Google Sign-In: ${e.message}", e)
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = e.message
+                        ?: "No se pudo iniciar Google Sign-In. Revisa WEB_CLIENT_ID."
+                )
+            }
+            null
+        }
+    }
+
+    /**
+     * Procesa el resultado del Activity Result de Google Sign-In.
+     * Cancelación / fallo SIEMPRE setean [AuthUiState.errorMessage] (nunca silencioso).
+     */
+    fun onGoogleIntentResult(resultCode: Int, data: Intent?) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            val result = authRepository.signInWithGoogle(activityContext)
+            if (resultCode != Activity.RESULT_OK) {
+                Log.w(TAG, "Google Sign-In RESULT_CANCELED/resultCode=$resultCode")
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = AuthRepository.CANCEL_AFTER_PICK_MESSAGE
+                    )
+                }
+                return@launch
+            }
+
+            val result = authRepository.handleGoogleSignInResult(data)
             result.fold(
                 onSuccess = {
                     Log.d(TAG, "Google Sign-In exitoso")
@@ -68,13 +105,19 @@ class AuthViewModel(
                     }
                 },
                 onFailure = { error ->
-                    Log.e(TAG, "Google Sign-In falló: ${error::class.java.simpleName} ${error.message}", error)
-                    // Cancelled se mantiene silencioso; Failed y NoCredential siempre muestran mensaje.
+                    Log.e(
+                        TAG,
+                        "Google Sign-In falló: ${error::class.java.simpleName} ${error.message}",
+                        error
+                    )
                     val message = when (error) {
-                        is AuthException.Cancelled -> null
-                        is AuthException.NoCredential -> error.message
+                        is AuthException.Cancelled ->
+                            error.message ?: AuthRepository.CANCEL_AFTER_PICK_MESSAGE
+                        is AuthException.NoCredential ->
+                            error.message ?: AuthRepository.CANCEL_AFTER_PICK_MESSAGE
                         is AuthException.Failed -> error.detail
-                        else -> error.message ?: "Error al iniciar sesión"
+                        else -> error.message
+                            ?: "Error al iniciar sesión con Google. Inténtalo de nuevo."
                     }
                     _uiState.update {
                         it.copy(isLoading = false, errorMessage = message)

@@ -1,5 +1,8 @@
 package com.benedy.deudas.ui.navigation
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -91,12 +94,20 @@ fun DeudasNavGraph(authViewModel: AuthViewModel) {
         startDestination = startDestination
     ) {
         composable(Routes.LOGIN) {
+            val activity = context as Activity
+            val googleSignInLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.StartActivityForResult()
+            ) { result ->
+                authViewModel.onGoogleIntentResult(result.resultCode, result.data)
+            }
             LoginScreen(
                 uiState = uiState,
                 onContinueAsGuest = { authViewModel.continueAsGuest() },
                 onGoogleSignIn = {
-                    val activity = context as? android.app.Activity ?: context
-                    authViewModel.signInWithGoogle(activity)
+                    val intent = authViewModel.beginGoogleSignIn(activity)
+                    if (intent != null) {
+                        googleSignInLauncher.launch(intent)
+                    }
                 },
                 onClearError = { authViewModel.clearError() }
             )
