@@ -2,6 +2,7 @@ package com.benedy.deudas.data.auth
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -17,7 +18,6 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingExcept
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.util.UUID
 
 /**
  * Repositorio de autenticación: Google Identity (Credential Manager) + modo invitado.
@@ -60,7 +60,8 @@ class AuthRepository(appContext: Context) {
     /**
      * Google Sign-In vía Credential Manager.
      * 1) GetGoogleIdOption (cuentas en el dispositivo)
-     * 2) Si no hay credencial → GetSignInWithGoogleOption (botón / flujo completo)
+     * 2) Ante CUALQUIER GetCredentialException (excepto cancelación del usuario)
+     *    → GetSignInWithGoogleOption (flujo completo / botón)
      *
      * @param activityContext debe ser una Activity (Credential Manager muestra UI).
      */
@@ -81,24 +82,61 @@ class AuthRepository(appContext: Context) {
         return try {
             requestGoogleIdCredential(activityContext, clientId, filterAuthorized = false)
         } catch (e: GetCredentialCancellationException) {
+            Log.e(TAG, "GoogleId cancelado por el usuario", e)
             Result.failure(AuthException.Cancelled)
-        } catch (e: NoCredentialException) {
-            // Fallback: flujo explícito "Sign in with Google"
+        } catch (e: GetCredentialException) {
+            // Fallback en cualquier error de credencial (NoCredential y otros),
+            // no solo NoCredentialException — Play Store builds a menudo fallan aquí.
+            Log.e(TAG, "GetGoogleIdOption falló; intentando SignInWithGoogle. msg=${e.message}", e)
             try {
                 requestSignInWithGoogle(activityContext, clientId)
             } catch (e2: GetCredentialCancellationException) {
+                Log.e(TAG, "SignInWithGoogle cancelado por el usuario", e2)
                 Result.failure(AuthException.Cancelled)
             } catch (e2: NoCredentialException) {
+                Log.e(TAG, "SignInWithGoogle: sin credenciales", e2)
                 Result.failure(AuthException.NoCredential)
             } catch (e2: GetCredentialException) {
-                Result.failure(AuthException.Failed(e2.message ?: "Error de credenciales"))
+                Log.e(TAG, "SignInWithGoogle GetCredentialException: ${e2.message}", e2)
+                Result.failure(AuthException.Failed(mapCredentialError(e2)))
             } catch (e2: Exception) {
-                Result.failure(AuthException.Failed(e2.message ?: "Error desconocido"))
+                Log.e(TAG, "SignInWithGoogle error inesperado: ${e2.message}", e2)
+                Result.failure(AuthException.Failed(mapCredentialError(e2)))
             }
-        } catch (e: GetCredentialException) {
-            Result.failure(AuthException.Failed(e.message ?: "Error de credenciales"))
         } catch (e: Exception) {
-            Result.failure(AuthException.Failed(e.message ?: "Error desconocido"))
+            Log.e(TAG, "signInWithGoogle error inesperado: ${e.message}", e)
+            Result.failure(AuthException.Failed(mapCredentialError(e)))
+        }
+    }
+
+    private fun mapCredentialError(throwable: Throwable): String {
+        val msg = (throwable.message ?: "").lowercase()
+        val type = throwable.javaClass.simpleName
+        val combined = "$type $msg"
+
+        return when {
+            combined.contains("developer_error") ||
+                combined.contains(":10") ||
+                combined.contains("10:") ||
+                Regex("""\b10\b""").containsMatchIn(combined) ->
+                "Error de configuración de Google (código 10). " +
+                    "El SHA-1 de la firma de Play puede no estar registrado aún; espera unos minutos e inténtalo de nuevo."
+
+            combined.contains("12501") ||
+                combined.contains("canceled") ||
+                combined.contains("cancelled") ->
+                "No se pudo completar el inicio de sesión con Google. " +
+                    "Si cancelaste, vuelve a intentarlo; si no, revisa la cuenta de Google en el dispositivo."
+
+            combined.contains("12500") ->
+                "Error interno de Google Sign-In. Prueba de nuevo o reinicia la app."
+
+            combined.contains("7:") || combined.contains("network") ->
+                "Sin conexión. Comprueba tu internet e inténtalo de nuevo."
+
+            else ->
+                throwable.message?.takeIf { it.isNotBlank() }
+                    ?: "Error al iniciar sesión con Google. Inténtalo de nuevo."
         }
     }
 
@@ -111,7 +149,6 @@ class AuthRepository(appContext: Context) {
             .setFilterByAuthorizedAccounts(filterAuthorized)
             .setServerClientId(clientId)
             .setAutoSelectEnabled(false)
-            .setNonce(UUID.randomUUID().toString())
             .build()
 
         val request = GetCredentialRequest.Builder()
@@ -130,7 +167,6 @@ class AuthRepository(appContext: Context) {
         clientId: String
     ): Result<UserSession> {
         val option = GetSignInWithGoogleOption.Builder(clientId)
-            .setNonce(UUID.randomUUID().toString())
             .build()
 
         val request = GetCredentialRequest.Builder()
@@ -163,10 +199,14 @@ class AuthRepository(appContext: Context) {
                     _session.value = session
                     Result.success(session)
                 } catch (e: GoogleIdTokenParsingException) {
+                    Log.e(TAG, "No se pudo parsear Google ID token", e)
                     Result.failure(AuthException.Failed("No se pudo leer el token de Google"))
                 }
             }
-            else -> Result.failure(AuthException.Failed("Tipo de credencial no soportado"))
+            else -> {
+                Log.e(TAG, "Tipo de credencial no soportado: ${credential::class.java.name}")
+                Result.failure(AuthException.Failed("Tipo de credencial no soportado"))
+            }
         }
     }
 
@@ -210,6 +250,7 @@ class AuthRepository(appContext: Context) {
     }
 
     companion object {
+        private const val TAG = "AuthRepository"
         private const val PREFS_NAME = "deudas_auth"
         private const val KEY_ID_TOKEN = "id_token"
         private const val KEY_DISPLAY_NAME = "display_name"

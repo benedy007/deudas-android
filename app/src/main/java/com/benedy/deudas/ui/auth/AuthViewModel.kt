@@ -1,6 +1,7 @@
 package com.benedy.deudas.ui.auth
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -57,6 +58,7 @@ class AuthViewModel(
             val result = authRepository.signInWithGoogle(activityContext)
             result.fold(
                 onSuccess = {
+                    Log.d(TAG, "Google Sign-In exitoso")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -66,6 +68,8 @@ class AuthViewModel(
                     }
                 },
                 onFailure = { error ->
+                    Log.e(TAG, "Google Sign-In falló: ${error::class.java.simpleName} ${error.message}", error)
+                    // Cancelled se mantiene silencioso; Failed y NoCredential siempre muestran mensaje.
                     val message = when (error) {
                         is AuthException.Cancelled -> null
                         is AuthException.NoCredential -> error.message
@@ -96,6 +100,10 @@ class AuthViewModel(
 
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    companion object {
+        private const val TAG = "AuthViewModel"
     }
 }
 
